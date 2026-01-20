@@ -26,7 +26,7 @@ const Header: React.FC = () => {
           {/* Navegación principal */}
           <nav className="hidden md:flex items-center space-x-6">
             <Link to="/" className="hover:text-blue-200 transition-colors font-medium px-2 py-1">Inicio</Link>
-            <Link to="/calendario" className="hover:text-blue-200 transition-colors font-medium px-2 py-1">Calendario</Link>
+            <Link to="/visitar-propiedad" className="hover:text-blue-200 transition-colors font-medium px-2 py-1">Visitar Propiedad</Link>
             <Link to="/servicios" className="hover:text-blue-200 transition-colors font-medium px-2 py-1">Servicios</Link>
             <Link to="/contacto" className="hover:text-blue-200 transition-colors font-medium px-2 py-1">Contacto</Link>
             
