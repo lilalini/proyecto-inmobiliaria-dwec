@@ -45,7 +45,7 @@ export const propertyController = {
           // Aquí procesarías la imagen y guardarías la URL
           // Por ahora simulamos una URL
           const imageUrl = `/uploads/${file.filename}`;
-          await Property.addImage(newProperty.id, imageUrl, i);
+          await Property.addImage(newProperty.serial, imageUrl, i);
         }
       }
 

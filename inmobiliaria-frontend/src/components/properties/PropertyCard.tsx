@@ -43,7 +43,7 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, onViewDetails }) 
       <div className="relative h-56 bg-gray-50 overflow-hidden">
         {property.images && property.images.length > 0 ? (
           <img
-            src={property.images[0].url}  // SOLO url
+            src={property.images[0].image_url}  // SOLO url
             alt={property.title}  // SOLO el título de propiedad
             className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
           />

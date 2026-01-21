@@ -1,5 +1,13 @@
 import React, { useState } from 'react';
-import type { PropertyImage } from '../../services/api';
+
+
+interface PropertyImage {
+  id: number;
+  image_url: string;  // ¡IMPORTANTE! Este es el nombre correcto
+  alt_text?: string;
+  is_primary?: boolean;
+  is_main?: boolean;  // Podría ser is_main en lugar de is_primary
+}
 
 interface PropertyGalleryProps {
   images: PropertyImage[];

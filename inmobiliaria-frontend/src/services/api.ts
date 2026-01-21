@@ -27,10 +27,11 @@ export interface Property {
   created_at: string;
   updated_at: string;
   images: Array<{
-    id: number;
-    url: string;
-    order: number;
-  }>;
+  id: number;
+  image_url: string;    // ← Coincide con BD y componentes
+  is_main?: boolean;    // ← Para compatibilidad
+  image_order?: number; // ← Nombre exacto de BD
+}>;
 }
 
 export interface Visit {

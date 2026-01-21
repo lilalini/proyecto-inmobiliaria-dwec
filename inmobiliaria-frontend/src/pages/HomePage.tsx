@@ -4,8 +4,13 @@ import PropertyCard from '../components/properties/PropertyCard';
 import { propertyAPI } from '../services/api';
 import type { Property, ApiResponse } from '../services/api';
 import Footer from '../components/common/Footer';
+import EmptyState from '../components/common/EmptyState';
+import { useNavigate } from 'react-router-dom';
+
+
 
 const HomePage: React.FC = () => {
+  const navigate = useNavigate();
   const [properties, setProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -20,6 +25,15 @@ const HomePage: React.FC = () => {
   
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+   // FUNCIÓN DE NORMALIZACIÓN (dentro del componente)
+  const normalizeText = (text: string): string => {
+    return text
+      .toLowerCase()
+      .normalize("NFD")  // Separa letras de acentos
+      .replace(/[\u0300-\u036f]/g, "");  // Elimina los acentos
+  };
+  
+
   // Cargar propiedades del backend REAL
   const loadProperties = useCallback(async (currentFilters = filters) => {
     try {
@@ -32,30 +46,39 @@ const HomePage: React.FC = () => {
       if (response.success && Array.isArray(response.data)) {
         let result = response.data;
         
-        // Filtrar por texto (en frontend por ahora)
-        if (currentFilters.searchText) {
-          const searchLower = currentFilters.searchText.toLowerCase();
+      // Filtrar por texto (en frontend por ahora)
+      if (currentFilters.searchText) {
+        const searchNormalized = normalizeText(currentFilters.searchText);
+        
+        const typeTranslations: Record<string, string> = {
+          apartment: 'apartamento',
+          house: 'casa', 
+          chalet: 'chalet',
+          penthouse: 'atico',  // SIN ACENTO - normalizeText quita acentos
+          commercial: 'local comercial',
+          office: 'oficina',
+          land: 'terreno'
+        };
+        
+        result = result.filter(property => {
+          // Normalizar todos los textos a comparar
+          const titleNormalized = normalizeText(property.title);
+          const descNormalized = normalizeText(property.description);
+          const addressNormalized = normalizeText(property.address);
+          const cityNormalized = normalizeText(property.city);
+          const spanishType = typeTranslations[property.type] || property.type;
+          const typeNormalized = normalizeText(spanishType);
           
-          const typeTranslations: Record<string, string> = {
-            apartment: 'apartamento',
-            house: 'casa', 
-            chalet: 'chalet',
-            penthouse: 'ático',
-            commercial: 'local comercial',
-            office: 'oficina',
-            land: 'terreno'
-          };
-          
-          result = result.filter(property => {
-            const spanishType = typeTranslations[property.type] || property.type;
-            return (
-              property.title.toLowerCase().includes(searchLower) ||
-              property.description.toLowerCase().includes(searchLower) ||
-              property.address.toLowerCase().includes(searchLower) ||
-              spanishType.includes(searchLower)
-            );
-          });
-        }
+          // Buscar en todos los campos normalizados
+          return (
+            titleNormalized.includes(searchNormalized) ||
+            descNormalized.includes(searchNormalized) ||
+            addressNormalized.includes(searchNormalized) ||
+            cityNormalized.includes(searchNormalized) ||
+            typeNormalized.includes(searchNormalized)
+          );
+        });
+}
         
         // Filtrar por ciudad
         if (currentFilters.city) {
@@ -174,14 +197,14 @@ const HomePage: React.FC = () => {
             <input 
               type="text" 
               placeholder="¿Qué buscas? Ej: ático, piscina, centro..." 
-              className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
               value={filters.searchText}
               onChange={(e) => handleFilterChange('searchText', e.target.value)}
               aria-label="Buscar propiedades"
             />
             
             <select 
-              className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
               value={filters.propertyType}
               onChange={(e) => handleFilterChange('propertyType', e.target.value)}
               aria-label="Tipo de propiedad"
@@ -197,12 +220,15 @@ const HomePage: React.FC = () => {
             </select>
             
             <select 
-              className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
               value={filters.city}
               onChange={(e) => handleFilterChange('city', e.target.value)}
               aria-label="Ciudad"
             >
               <option value="">Todas las ciudades</option>
+              <option value="Benidorm">Benidorm</option>
+              <option value="Marbella">Marbella</option>
+              <option value="Sotogrande">Sotogrande</option>
               <option value="Madrid">Madrid</option>
               <option value="Barcelona">Barcelona</option>
               <option value="Valencia">Valencia</option>
@@ -223,7 +249,7 @@ const HomePage: React.FC = () => {
               <input 
                 type="number"
                 placeholder="Ej: 100000"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
                 value={filters.minPrice}
                 onChange={(e) => handleFilterChange('minPrice', e.target.value)}
                 aria-label="Precio mínimo"
@@ -235,7 +261,7 @@ const HomePage: React.FC = () => {
               <input 
                 type="number"
                 placeholder="Ej: 500000"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
                 value={filters.maxPrice}
                 onChange={(e) => handleFilterChange('maxPrice', e.target.value)}
                 aria-label="Precio máximo"
@@ -338,30 +364,26 @@ const HomePage: React.FC = () => {
           {/* Grid de propiedades */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {properties.map((property) => (
-              <PropertyCard key={property.serial} property={property} />
+              <PropertyCard 
+              key={property.serial} 
+              property={property} 
+              onViewDetails={() => navigate(`/property/${property.serial}`)}
+              />
             ))}
           </div>
           
-          {properties.length === 0 && !loading && (
-            <div className="text-center py-16">
-              <div className="text-gray-400 text-6xl mb-6">🏠</div>
-              <h3 className="text-2xl font-medium text-gray-700 mb-3">No se encontraron propiedades</h3>
-              <p className="text-gray-500 max-w-md mx-auto mb-6">
-                {filters.searchText || filters.propertyType || filters.city || filters.minPrice || filters.maxPrice 
-                  ? "No hay propiedades que coincidan con tus filtros de búsqueda. Prueba con otros criterios."
-                  : "No hay propiedades disponibles en este momento. Por favor, intenta más tarde."
+            {properties.length === 0 && !loading && (
+              <EmptyState
+                title="Sin resultados"
+                message={
+                  filters.searchText || filters.propertyType || filters.city || filters.minPrice || filters.maxPrice
+                    ? "No encontramos propiedades que coincidan con los filtros aplicados."
+                    : "No hay propiedades disponibles en este momento."
                 }
-              </p>
-              {(filters.searchText || filters.propertyType || filters.city || filters.minPrice || filters.maxPrice) && (
-                <button
-                  onClick={clearFilters}
-                  className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition"
-                >
-                  Limpiar filtros
-                </button>
-              )}
-            </div>
-          )}
+                actionLabel="Restablecer búsqueda"
+                onAction={clearFilters}
+              />
+            )}
         </div>
         
         {/* Información del sistema */}

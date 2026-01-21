@@ -7,7 +7,7 @@ const NotFound = () => {
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <Header />
       
-      <main className="flex-grow flex items-center justify-center px-4">
+      <main className="flex-grow flex items-center justify-center px-4 mb-16">
         <div className="max-w-md w-full text-center">
           <div className="mb-8">
             <div className="text-9xl font-bold text-gray-200 mb-4">404</div>
@@ -34,24 +34,14 @@ const NotFound = () => {
                 >
                   Panel de Admin
                 </Link>
-                <Link 
-                  to="/calendario" 
-                  className="py-3 px-4 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium text-sm"
-                >
-                  Calendario
-                </Link>
+               
                 <Link 
                   to="/contacto" 
                   className="py-3 px-4 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium text-sm"
                 >
                   Contacto
                 </Link>
-                <Link 
-                  to="/propiedad/1" 
-                  className="py-3 px-4 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium text-sm"
-                >
-                  Ejemplo propiedad
-                </Link>
+                
               </div>
             </div>
           </div>

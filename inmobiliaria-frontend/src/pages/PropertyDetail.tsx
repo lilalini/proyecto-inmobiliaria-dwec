@@ -5,7 +5,7 @@ import Footer from '../components/common/Footer';
 import PropertyGallery from '../components/properties/PropertyGallery';
 import NewVisitForm from '../components/forms/NewVisitForm';
 import type { Property } from '../services/api';
-
+import { propertyAPI } from '../services/api';
 
 const PropertyDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -21,72 +21,15 @@ const PropertyDetail = () => {
       
       try {
         setLoading(true);
-        // Simulación: reemplaza esto con tu llamada real a apiService
-        const mockProperty: Property = {
-          id: parseInt(id),
-          title: 'Casa moderna en zona residencial exclusiva',
-          description: 'Impresionante villa contemporánea de 320m² construidos en parcela de 900m². La propiedad, reformada integralmente en 2023, cuenta con acabados de lujo, certificación energética A, domótica integral, piscina climatizada y jardín diseñado por paisajista. Distribuida en dos plantas luminosas con amplios ventanales y terraza solárium con vistas panorámicas.',
-          address: 'Calle Alborán, 24',
-          city: 'Madrid',
-          price: 895000,
-          type: 'house',
-          operation: 'venta',           // ← NUEVO
-          bedrooms: 5,
-          bathrooms: 4,
-          area: 320,
-          status: 'available',
-          featured: true,               // ← NUEVO
-          agent_id: 1,                  // ← NUEVO
-          created_at: '2024-02-10T09:15:00Z',
-          updated_at: '2024-02-10T09:15:00Z', // ← NUEVO
-          images: [
-            {
-              id: 1,
-              property_id: parseInt(id),
-              image_url: 'https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=1200',
-              alt_text: 'Fachada principal de la vivienda',
-              is_primary: true
-            },
-            {
-              id: 2,
-              property_id: parseInt(id),
-              image_url: 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w-800',
-              alt_text: 'Salón principal con chimenea',
-              is_primary: false
-            },
-            {
-              id: 3,
-              property_id: parseInt(id),
-              image_url: 'https://images.unsplash.com/photo-1567496898669-ee935f003f30?w=800',
-              alt_text: 'Cocina moderna totalmente equipada',
-              is_primary: false
-            },
-            {
-              id: 4,
-              property_id: parseInt(id),
-              image_url: 'https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?w=800',
-              alt_text: 'Dormitorio principal con vestidor',
-              is_primary: false
-            },
-            {
-              id: 5,
-              property_id: parseInt(id),
-              image_url: 'https://images.unsplash.com/photo-1571080636137-8c4c6bdfda0d?w=800',
-              alt_text: 'Piscina y zona exterior',
-              is_primary: false
-            }
-          ]
-        };
         
-        // Descomenta cuando tengas tu API real:
-        // const response = await apiService.getPropertyWithImages(parseInt(id));
-        // if (response.success) {
-        //   setProperty(response.data);
-        // } else {
-        //   setError(response.error || 'Error al cargar la propiedad');
-        // }
+        // LLAMADA REAL A LA API
+        const response = await propertyAPI.getById(parseInt(id));
         
-        setProperty(mockProperty); // Elimina esta línea cuando uses la API real
+        if (response.success && response.data) {
+          setProperty(response.data);
+        } else {
+          setError(response.error || 'Error al cargar la propiedad');
+        }
       } catch {
         setError('Error de conexión con el servidor');
       } finally {
@@ -159,7 +102,7 @@ const PropertyDetail = () => {
             <nav className="flex items-center text-sm text-gray-600">
               <Link to="/" className="text-blue-600 hover:text-blue-800 font-medium">Inicio</Link>
               <span className="mx-3">/</span>
-              <span className="text-gray-500">Propiedad #{property.id}</span>
+              <span className="text-gray-500">Propiedad #{property.serial}</span>
             </nav>
             <h1 className="text-3xl font-bold text-gray-900 mt-2">{property.title}</h1>
           </div>
@@ -190,7 +133,7 @@ const PropertyDetail = () => {
             <div className="bg-white rounded-xl shadow-lg p-6">
               <h2 className="text-xl font-bold text-gray-900 mb-6">Solicitar visita para esta propiedad</h2>
         <NewVisitForm 
-            propertyId={property.id} 
+            propertyId={property.serial} 
             propertyTitle={property.title}
             onClose={() => setShowVisitForm(false)}
             onSuccess={() => {

@@ -7,7 +7,7 @@ export const Property = {
         SELECT p.*, 
                COALESCE(
                  json_agg(
-                   json_build_object('id', pi.id, 'url', pi.image_url, 'order', pi.image_order)
+                   json_build_object('id', pi.id, 'image_url', pi.image_url, 'order', pi.image_order)
                    ORDER BY pi.image_order
                  ) FILTER (WHERE pi.id IS NOT NULL),
                  '[]'
@@ -30,7 +30,7 @@ export const Property = {
         SELECT p.*, 
                COALESCE(
                  json_agg(
-                   json_build_object('id', pi.id, 'url', pi.image_url, 'order', pi.image_order)
+                   json_build_object('id', pi.id, 'image_url', pi.image_url, 'order', pi.image_order)
                    ORDER BY pi.image_order
                  ) FILTER (WHERE pi.id IS NOT NULL),
                  '[]'

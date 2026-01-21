@@ -15,7 +15,7 @@ const Footer: React.FC = () => {
             <h4 className="text-base font-semibold mb-2">Enlaces</h4>
             <div className="space-y-1">
               <Link to="/" className="text-gray-300 hover:text-white transition-colors block text-sm">Inicio</Link>
-              <Link to="/calendario" className="text-gray-300 hover:text-white transition-colors block text-sm">Calendario</Link>
+              <Link to="/visitar-propiedad" className="text-gray-300 hover:text-white transition-colors block text-sm">Visitar Propiedad</Link>
               <Link to="/servicios" className="text-gray-300 hover:text-white transition-colors block text-sm">Servicios</Link>
               <Link to="/contacto" className="text-gray-300 hover:text-white transition-colors block text-sm">Contacto</Link>
             </div>
