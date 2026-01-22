@@ -6,6 +6,17 @@ import PropertyGallery from '../components/properties/PropertyGallery';
 import NewVisitForm from '../components/forms/NewVisitForm';
 import type { Property } from '../services/api';
 import { propertyAPI } from '../services/api';
+// Importar Heroicons
+import {
+  EnvelopeIcon,
+  PhoneIcon,
+  MapPinIcon,
+  UserCircleIcon,
+  XMarkIcon,
+  UserIcon,
+  DevicePhoneMobileIcon,
+  ChatBubbleBottomCenterTextIcon
+} from '@heroicons/react/24/outline';
 
 const PropertyDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -14,6 +25,7 @@ const PropertyDetail = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showVisitForm, setShowVisitForm] = useState(false);
+  const [showContactModal, setShowContactModal] = useState(false);
 
   useEffect(() => {
     const fetchProperty = async () => {
@@ -21,8 +33,6 @@ const PropertyDetail = () => {
       
       try {
         setLoading(true);
-        
-        // LLAMADA REAL A LA API
         const response = await propertyAPI.getById(parseInt(id));
         
         if (response.success && response.data) {
@@ -39,6 +49,14 @@ const PropertyDetail = () => {
 
     fetchProperty();
   }, [id]);
+
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat('es-ES', {
+      style: 'currency',
+      currency: 'EUR',
+      minimumFractionDigits: 0
+    }).format(price);
+  };
 
   if (loading) {
     return (
@@ -64,6 +82,7 @@ const PropertyDetail = () => {
             <p className="text-gray-600 mb-8">{error || 'La propiedad solicitada no existe o no está disponible.'}</p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <button 
+                type="button"
                 onClick={() => navigate(-1)}
                 className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
               >
@@ -82,14 +101,6 @@ const PropertyDetail = () => {
       </div>
     );
   }
-
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('es-ES', {
-      style: 'currency',
-      currency: 'EUR',
-      minimumFractionDigits: 0
-    }).format(price);
-  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -119,6 +130,7 @@ const PropertyDetail = () => {
                property.status === 'sold' ? 'VENDIDA' : 'ALQUILADA'}
             </span>
             <button
+              type="button"
               onClick={() => setShowVisitForm(!showVisitForm)}
               className="px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
             >
@@ -127,139 +139,219 @@ const PropertyDetail = () => {
           </div>
         </div>
 
-        {/* Formulario de visita (condicional) */}
+        {/* Formulario de visita */}
         {showVisitForm && (
           <div className="mb-10">
             <div className="bg-white rounded-xl shadow-lg p-6">
               <h2 className="text-xl font-bold text-gray-900 mb-6">Solicitar visita para esta propiedad</h2>
-        <NewVisitForm 
-            propertyId={property.serial} 
-            propertyTitle={property.title}
-            onClose={() => setShowVisitForm(false)}
-            onSuccess={() => {
-              alert('Visita solicitada correctamente');
-              setShowVisitForm(false);
-            }}
-/>
+              <NewVisitForm 
+                propertyId={property.serial} 
+                propertyTitle={property.title}
+                onClose={() => setShowVisitForm(false)}
+                onSuccess={() => {
+                  alert('Visita solicitada correctamente');
+                  setShowVisitForm(false);
+                }}
+              />
             </div>
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-          {/* Columna izquierda: Galería y descripción */}
-          <div className="space-y-8">
-            <div>
+        {/* LAYOUT 3 FILAS x 2 COLUMNAS */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full">
+          
+          {/* COLUMNA IZQUIERDA */}
+          <div className="space-y-6">
+            {/* FILA 1: Galería (expandida al 50% de altura) */}
+            <div className="bg-white rounded-xl shadow-sm p-4">
               <PropertyGallery 
                 images={property.images || []} 
                 propertyTitle={property.title}
               />
             </div>
             
-            <div className="bg-white rounded-xl shadow-sm p-7">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">Descripción</h2>
-              <div className="prose prose-lg max-w-none text-gray-700">
-                <p>{property.description}</p>
+            {/* FILA 2: Mapa (debajo de la galería) */}
+            <div className="bg-white rounded-xl shadow-sm p-4">
+              <div className="flex items-center mb-3">
+                <MapPinIcon className="h-5 w-5 text-gray-600 mr-2" />
+                <h3 className="font-bold text-gray-900">Ubicación aproximada</h3>
+              </div>
+              <div className="h-64 bg-gray-100 rounded-lg flex items-center justify-center">
+                <div className="text-center">
+                  <div className="text-gray-400 text-3xl mb-2">🗺️</div>
+                  <p className="text-sm text-gray-600">Zona {property.city}</p>
+                  <p className="text-xs text-gray-500 mt-1">Mapa de referencia</p>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Columna derecha: Información detallada */}
-          <div className="space-y-8">
-            {/* Precio y características */}
-            <div className="bg-white rounded-xl shadow-sm p-7">
-              <div className="mb-8">
-                <div className="text-4xl font-bold text-gray-900">{formatPrice(property.price)}</div>
-                <p className="text-gray-600 mt-2">Precio de venta</p>
+          {/* COLUMNA DERECHA */}
+          <div className="space-y-6">
+            {/* FILA 1: Precio + Características + Descripción (todo junto compacto) */}
+            <div className="bg-white rounded-xl shadow-sm p-4">
+              {/* Precio */}
+              <div className="mb-4">
+                <div className="text-2xl font-bold text-gray-900">{formatPrice(property.price)}</div>
+                <div className="text-gray-600 text-xs">Precio de venta</div>
               </div>
               
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-5">
-                <div className="text-center p-4 border border-gray-100 rounded-lg">
-                  <div className="text-2xl font-bold text-gray-900">{property.bedrooms || 'N/A'}</div>
-                  <div className="text-gray-600 text-sm mt-1">Dormitorios</div>
+              {/* Características */}
+              <div className="grid grid-cols-3 gap-2 mb-4">
+                <div className="text-center p-2">
+                  <div className="text-sm font-semibold text-gray-900">{property.bedrooms || 'N/A'}</div>
+                  <div className="text-xs text-gray-500">Dorm.</div>
                 </div>
-                <div className="text-center p-4 border border-gray-100 rounded-lg">
-                  <div className="text-2xl font-bold text-gray-900">{property.bathrooms || 'N/A'}</div>
-                  <div className="text-gray-600 text-sm mt-1">Baños</div>
+                <div className="text-center p-2">
+                  <div className="text-sm font-semibold text-gray-900">{property.bathrooms || 'N/A'}</div>
+                  <div className="text-xs text-gray-500">Baños</div>
                 </div>
-                <div className="text-center p-4 border border-gray-100 rounded-lg">
-                  <div className="text-2xl font-bold text-gray-900">{property.area} m²</div>
-                  <div className="text-gray-600 text-sm mt-1">Superficie</div>
+                <div className="text-center p-2">
+                  <div className="text-sm font-semibold text-gray-900">{property.area}</div>
+                  <div className="text-xs text-gray-500">m²</div>
                 </div>
-                <div className="text-center p-4 border border-gray-100 rounded-lg">
-                  <div className="text-2xl font-bold text-gray-900">
+                <div className="text-center p-2">
+                  <div className="text-sm font-semibold text-gray-900">
                     {property.type === 'house' ? 'Casa' : 
-                     property.type === 'apartment' ? 'Apto.' :
-                     property.type === 'land' ? 'Terreno' : 'Comercial'}
+                     property.type === 'apartment' ? 'Apto' : 
+                     property.type === 'land' ? 'Terr' : 'Com.'}
                   </div>
-                  <div className="text-gray-600 text-sm mt-1">Tipo</div>
+                  <div className="text-xs text-gray-500">Tipo</div>
                 </div>
-                <div className="text-center p-4 border border-gray-100 rounded-lg">
-                  <div className="text-2xl font-bold text-gray-900">A</div>
-                  <div className="text-gray-600 text-sm mt-1">Certif. energética</div>
+                <div className="text-center p-2">
+                  <div className="text-sm font-semibold text-gray-900">A</div>
+                  <div className="text-xs text-gray-500">Energía</div>
                 </div>
-                <div className="text-center p-4 border border-gray-100 rounded-lg">
-                  <div className="text-2xl font-bold text-gray-900">2</div>
-                  <div className="text-gray-600 text-sm mt-1">Plazas garaje</div>
+                <div className="text-center p-2">
+                  <div className="text-sm font-semibold text-gray-900">2</div>
+                  <div className="text-xs text-gray-500">Garaje</div>
                 </div>
+              </div>
+              
+              {/* Descripción */}
+              <div className="border-t border-gray-100 pt-4">
+                <h4 className="text-sm font-bold text-gray-900 mb-2">Descripción</h4>
+                <p className="text-gray-700 text-sm leading-relaxed">
+                  {property.description}
+                </p>
               </div>
             </div>
-
-            {/* Ubicación */}
-            <div className="bg-white rounded-xl shadow-sm p-7">
-              <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
-                <span className="mr-3"></span> Ubicación
-              </h3>
-              <div className="space-y-4">
+            
+            {/* FILA 2: Contacto */}
+            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-200">
+              <h3 className="font-bold text-gray-900 mb-3">Contactar agente</h3>
+              
+              <div className="flex items-center mb-3">
+                <UserCircleIcon className="w-8 h-8 text-gray-600 mr-2" />
                 <div>
-                  <div className="text-sm text-gray-500 mb-1">Dirección completa</div>
-                  <div className="text-gray-900 font-medium">{property.address}, {property.city}</div>
-                </div>
-                <div>
-                  <div className="text-sm text-gray-500 mb-1">Zona/Barrio</div>
-                  <div className="text-gray-900 font-medium">Zona Residencial Norte</div>
-                </div>
-                <div className="pt-4 border-t border-gray-100">
-                  <div className="h-48 bg-gray-100 rounded-lg flex items-center justify-center">
-                    <div className="text-center text-gray-500">
-                      <div className="text-3xl mb-2">🗺️</div>
-                      <p className="text-sm">Mapa interactivo</p>
-                      <p className="text-xs mt-1">(Integrar Google Maps aquí)</p>
-                    </div>
-                  </div>
+                  <div className="text-sm font-medium text-gray-900">María González</div>
+                  <div className="text-xs text-gray-500">Agente</div>
                 </div>
               </div>
-            </div>
-
-            {/* Información de contacto */}
-            <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl shadow-sm p-7">
-              <h3 className="text-xl font-bold text-gray-900 mb-6">¿Interesado en esta propiedad?</h3>
-              <div className="space-y-4">
-                <div className="flex items-center">
-                  <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mr-4">
-                    <span className="text-blue-600 font-bold">i</span>
-                  </div>
-                  <div>
-                    <div className="font-medium text-gray-900">Agente asignado</div>
-                    <div className="text-gray-700">María González</div>
-                  </div>
+              
+              <div className="space-y-1 text-xs mb-4">
+                <div className="flex items-center text-gray-600">
+                  <EnvelopeIcon className="h-3 w-3 mr-1 text-gray-500" />
+                  <span>mgonzalez@inmobiliaria.com</span>
                 </div>
-                <div className="flex items-center">
-                  <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mr-4">
-                    <span className="text-blue-600 font-bold">✉</span>
-                  </div>
-                  <div>
-                    <div className="font-medium text-gray-900">Contacto directo</div>
-                    <div className="text-gray-700">mgonzalez@inmobiliaria.com</div>
-                  </div>
+                <div className="flex items-center text-gray-600">
+                  <PhoneIcon className="h-3 w-3 mr-1 text-gray-500" />
+                  <span>+34 600 123 456</span>
                 </div>
-                <button className="w-full mt-4 px-6 py-3.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold">
-                  Contactar al agente
-                </button>
               </div>
+              
+              <button
+                type="button"
+                onClick={() => setShowContactModal(true)}
+                className="w-full px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
+              >
+                Contactar ahora
+              </button>
             </div>
           </div>
         </div>
       </main>
+
+      {/* Modal de contacto */}
+      {showContactModal && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-bold text-gray-900">Contactar al agente</h3>
+              <button
+                type="button"
+                onClick={() => setShowContactModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+                aria-label="Cerrar ventana de contacto"
+              >
+                <XMarkIcon className="h-6 w-6" />
+              </button>
+            </div>
+            
+            <form className="space-y-4" onSubmit={(e) => {
+              e.preventDefault();
+              alert('Mensaje enviado (funcionalidad por implementar)');
+              setShowContactModal(false);
+            }}>
+              <div className="relative">
+                <UserIcon className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                <input
+                  type="text"
+                  className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Ej: Juan Pérez"
+                  required
+                />
+              </div>
+              
+              <div className="relative">
+                <EnvelopeIcon className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                <input
+                  type="email"
+                  className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="ejemplo@email.com"
+                  required
+                />
+              </div>
+              
+              <div className="relative">
+                <DevicePhoneMobileIcon className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                <input
+                  type="tel"
+                  className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="+34 600 000 000"
+                />
+              </div>
+              
+              <div className="relative">
+                <ChatBubbleBottomCenterTextIcon className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                <textarea
+                  rows={3}
+                  className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder={`Me interesa la propiedad "${property.title}"...`}
+                  defaultValue={`Hola, me interesa la propiedad "${property.title}" (${formatPrice(property.price)}) y quisiera más información.`}
+                  required
+                />
+              </div>
+              
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowContactModal(false)}
+                  className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+                >
+                  Enviar mensaje
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       <Footer />
     </div>

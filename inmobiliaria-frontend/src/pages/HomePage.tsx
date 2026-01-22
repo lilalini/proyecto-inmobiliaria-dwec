@@ -367,7 +367,7 @@ const HomePage: React.FC = () => {
               <PropertyCard 
               key={property.serial} 
               property={property} 
-              onViewDetails={() => navigate(`/property/${property.serial}`)}
+              onViewDetails={() => navigate(`/propiedad/${property.serial}`)}
               />
             ))}
           </div>

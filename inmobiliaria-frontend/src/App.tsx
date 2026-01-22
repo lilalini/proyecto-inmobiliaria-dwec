@@ -16,7 +16,7 @@ function App() {
         <Route path="/admin" element={<AdminPage />} />
         <Route path="/contacto" element={<ContactPage />} />
         <Route path="/calendario" element={<CalendarPage />} />
-        <Route path="/property/:id" element={<PropertyDetail />} />
+        <Route path="/propiedad/:id" element={<PropertyDetail />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="*" element={<NotFound />} />
         <Route path="/visitar-propiedad" element={<VisitarPropiedadPage />} />
