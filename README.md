@@ -18,11 +18,15 @@ Aplicación web completa para la gestión, visualización y administración de p
 *   Sistema de navegación completo con React Router
 
 ## Estructura del Proyecto
+```
 proyecto-inmobiliaria-dwec/
 ├── inmobiliaria-frontend/ # Aplicación React
 ├── backend/ # API Express
-└── database/ # Scripts SQL (esquema y datos)
-
+├── database/ # Scripts SQL
+├── docs/ # Documentación
+├── LICENSE
+└── README.md
+```
 ## Instalación Rápida
 
 1.  Clonar repositorio: `git clone https://github.com/lilalini/proyecto-inmobiliaria-dwec.git`
