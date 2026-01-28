@@ -7,7 +7,7 @@
 Campos:
 - id: SERIAL PRIMARY KEY
 - title: VARCHAR(255) NOT NULL
-- description: ```
+- description: TEXT
 - city: VARCHAR(100) NOT NULL
 - address: VARCHAR(255)
 - type: VARCHAR(50) NOT NULL
@@ -28,7 +28,7 @@ Campos:
 - id: SERIAL PRIMARY KEY
 - property_id: INTEGER REFERENCES properties(id) ON DELETE CASCADE
 - url: VARCHAR(500) NOT NULL
-- alt_```: VARCHAR(255)
+- alt_text: VARCHAR(255)
 - is_main: BOOLEAN DEFAULT FALSE
 - created_at: TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 
@@ -60,7 +60,7 @@ Campos:
 - client_phone: VARCHAR(20)
 - visit_date: TIMESTAMP NOT NULL
 - status: VARCHAR(20) DEFAULT 'scheduled'
-- notes: ```
+- notes: TEXT
 - created_at: TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 - updated_at: TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 
@@ -76,7 +76,7 @@ Campos:
 - email: VARCHAR(255) UNIQUE
 - phone: VARCHAR(20)
 - preferences: JSONB
-- notes: ```
+- notes: TEXT
 - created_at: TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 
 ```
@@ -122,7 +122,7 @@ CREATE TABLE users (
 CREATE TABLE properties (
     id SERIAL PRIMARY KEY,
     title VARCHAR(255) NOT NULL,
-    description ```,
+    description TEXT,
     city VARCHAR(100) NOT NULL,
     address VARCHAR(255),
     type VARCHAR(50) NOT NULL,
