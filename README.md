@@ -4,7 +4,7 @@ Aplicación web completa para la gestión, visualización y administración de p
 
 ## Tecnologías
 
-**Frontend:** React 18, TypeScript, Tailwind CSS, React Router, Axios  
+**Frontend:** React 18, TypeScript, Tailwind CSS, React Router, fetch API 
 **Backend:** Node.js, Express, PostgreSQL  
 **Base de Datos:** PostgreSQL con esquema relacional completo
 
