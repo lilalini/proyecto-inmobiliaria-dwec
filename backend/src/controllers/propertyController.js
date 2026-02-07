@@ -1,3 +1,4 @@
+import { validatePropertyCreate } from '../utils/validators.js';
 import { Property } from '../models/Property.js';
 
 export const propertyController = {
@@ -31,10 +32,13 @@ export const propertyController = {
     try {
       const propertyData = req.body;
       
-      // Validación básica
-      if (!propertyData.title || !propertyData.price) {
-        return res.status(400).json({ error: 'Title and price are required' });
-      }
+       const validation = validatePropertyCreate(propertyData);
+    if (!validation.isValid) {
+      return res.status(400).json({ 
+        success: false, 
+        error: validation.errors.join('. ') 
+      });
+    }
 
       const newProperty = await Property.create(propertyData);
       
@@ -53,6 +57,76 @@ export const propertyController = {
     } catch (error) {
       console.error('Error creating property:', error);
       res.status(500).json({ error: 'Error creating property' });
+    }
+  },
+    /**
+   * ACTUALIZAR PROPIEDAD
+   * PUT /api/properties/:id
+   */
+   async updateProperty(req, res) {
+    try {
+      const { id } = req.params;
+      const updateData = req.body;
+      
+      // Validar que hay datos
+      if (!updateData || Object.keys(updateData).length === 0) {
+        return res.status(400).json({
+          success: false,
+          error: 'No se proporcionaron datos para actualizar'
+        });
+      }
+
+      // ACTUALIZAR EN BD (LLAMADA REAL AL MODELO)
+      const updatedProperty = await Property.update(id, updateData);
+
+      res.json({
+        success: true,
+        data: updatedProperty,
+        message: 'Propiedad actualizada correctamente'
+      });
+
+    } catch (error) {
+      console.error('Error actualizando propiedad:', error);
+      
+      if (error.message === 'Propiedad no encontrada') {
+        return res.status(404).json({
+          success: false,
+          error: 'Propiedad no encontrada'
+        });
+      }
+      
+      res.status(500).json({
+        success: false,
+        error: 'Error interno al actualizar propiedad'
+      });
+    }
+  },
+
+  async deleteProperty(req, res) {
+    try {
+      const { id } = req.params;
+      
+      // ELIMINAR DE BD (LLAMADA REAL AL MODELO)
+      const deleted = await Property.delete(id);
+      
+      if (!deleted) {
+        return res.status(404).json({
+          success: false,
+          error: 'Propiedad no encontrada'
+        });
+      }
+
+      res.json({
+        success: true,
+        message: `Propiedad ${id} eliminada correctamente`
+      });
+
+    } catch (error) {
+      console.error('Error eliminando propiedad:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Error interno al eliminar propiedad'
+      });
     }
   }
 };

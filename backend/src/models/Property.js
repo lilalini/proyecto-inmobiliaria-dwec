@@ -83,5 +83,86 @@ export const Property = {
       console.error('ERROR DB addImage:', error.message);
       throw error;
     }
+  },
+
+    /**
+   * ACTUALIZAR PROPIEDAD EN BD
+   */
+  async update(serial, updateData) {
+    try {
+      // Campos permitidos para actualizar
+      const allowedFields = [
+        'title', 'description', 'type', 'operation', 'address', 'city',
+        'price', 'bedrooms', 'bathrooms', 'area', 'status', 'featured', 'agent_id'
+      ];
+      
+      // Construir SET dinámico
+      const setClauses = [];
+      const values = [];
+      let paramIndex = 1;
+      
+      Object.keys(updateData).forEach(field => {
+        if (allowedFields.includes(field)) {
+          setClauses.push(`${field} = $${paramIndex}`);
+          values.push(updateData[field]);
+          paramIndex++;
+        }
+      });
+      
+      if (setClauses.length === 0) {
+        throw new Error('No hay campos válidos para actualizar');
+      }
+      
+      // Añadir updated_at
+      setClauses.push('updated_at = CURRENT_TIMESTAMP');
+      
+      // Añadir serial al final
+      values.push(serial);
+      
+      const query = `
+        UPDATE properties 
+        SET ${setClauses.join(', ')}
+        WHERE serial = $${paramIndex}
+        RETURNING *
+      `;
+      
+      const result = await pool.query(query, values);
+      
+      if (result.rows.length === 0) {
+        throw new Error('Propiedad no encontrada');
+      }
+      
+      // Obtener propiedad actualizada con imágenes
+      return await this.getById(serial);
+      
+    } catch (error) {
+      console.error('ERROR DB update:', error.message);
+      throw error;
+    }
+  },
+
+  /**
+   * ELIMINAR PROPIEDAD DE BD
+   */
+  async delete(serial) {
+    try {
+      // Primero eliminar imágenes asociadas
+      await pool.query(
+        'DELETE FROM property_images WHERE property_serial = $1',
+        [serial]
+      );
+      
+      // Luego eliminar propiedad
+      const result = await pool.query(
+        'DELETE FROM properties WHERE serial = $1 RETURNING *',
+        [serial]
+      );
+      
+      return result.rows.length > 0;
+      
+    } catch (error) {
+      console.error('ERROR DB delete:', error.message);
+      throw error;
+    }
   }
 };

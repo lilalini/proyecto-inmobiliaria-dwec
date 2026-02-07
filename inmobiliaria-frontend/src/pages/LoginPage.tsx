@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '../components/common/Header';
 import Footer from '../components/common/Footer';
@@ -10,24 +10,56 @@ const LoginPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+      useEffect(() => {
+      const token = localStorage.getItem('authToken');
+
+      if (token) {
+        navigate('/admin', { replace: true });
+      }
+    }, [navigate]);
+
+
+    const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
 
-    // Simulación de login (luego conectamos con backend)
-    setTimeout(() => {
-      if (email === 'admin@apturist.com' && password === 'admin123') {
-        localStorage.setItem('userRole', 'admin');
+    try {
+      // 1. LLAMADA REAL AL BACKEND
+      const response = await fetch('http://localhost:5000/api/auth/login', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json' 
+        },
+        body: JSON.stringify({ 
+          email: email.trim(), 
+          password: password 
+        })
+      });
+      
+      // 2. PROCESAR RESPUESTA
+      const data = await response.json();
+      
+      // 3. SI ÉXITO: Guardar token y redirigir
+      if (data.success && data.token) {
+        localStorage.setItem('authToken', data.token);
+        localStorage.setItem('userRole', data.user.role);
+        localStorage.setItem('userEmail', data.user.email);
+        localStorage.setItem('userName', data.user.name);
+        
+        // Redirigir al admin (igual que antes)
         navigate('/admin');
-      } else if (email === 'agente@apturist.com' && password === 'agente123') {
-        localStorage.setItem('userRole', 'agent');
-        navigate('/admin'); // O dashboard de agente
       } else {
-        setError('Credenciales incorrectas');
+        // 4. SI ERROR: Mostrar mensaje del backend
+        setError(data.error || 'Credenciales incorrectas');
       }
+    } catch (error) {
+      // 5. ERROR DE CONEXIÓN
+      console.error('Login error:', error);
+      setError('No se pudo conectar con el servidor. Verifica que el backend esté corriendo.');
+    } finally {
       setLoading(false);
-    }, 1000);
+    }
   };
 
   return (
@@ -91,8 +123,9 @@ const LoginPage: React.FC = () => {
               <div className="mt-8 pt-6 border-t border-gray-200">
                 <div className="text-sm text-gray-600 mb-2">Credenciales de prueba:</div>
                 <div className="text-xs text-gray-500 space-y-1">
-                  <div>Admin: admin@apturist.com / admin123</div>
-                  <div>Agente: agente@apturist.com / agente123</div>
+                  <div>Admin: carlos.rodriguez@apturist.com / admin123</div>
+                  <div>Agente: laura.martinez@apturist.com / agent123</div>
+                  <div>Manager: pedro.sanchez@apturist.com / manager123</div>
                 </div>
               </div>
             </form>

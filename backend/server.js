@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import authRoutes from './src/routes/authRoutes.js';
 
 // Importa las rutas de propiedades
 import propertyRoutes from './src/routes/propertyRoutes.js';
@@ -33,6 +34,7 @@ app.get('/api/test', (req, res) => {
 
 // RUTAS PRINCIPALES DE LA API
 app.use('/api/properties', propertyRoutes);
+app.use('/api/auth', authRoutes);
 
 const server = app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);

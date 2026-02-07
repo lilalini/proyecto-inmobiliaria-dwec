@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PropertyForm from '../components/admin/PropertyForm';
-import Header from '../components/common/Header';
 import Footer from '../components/common/Footer';
+import PropertyList from '../components/admin/PropertyList';
+import { propertyAPI } from '../services/api';
+import type { Property } from '../services/api';
 
 const AdminPage: React.FC = () => {
   const navigate = useNavigate();
@@ -10,31 +12,70 @@ const AdminPage: React.FC = () => {
   const [formExpanded, setFormExpanded] = useState(false);
 
   useEffect(() => {
+    const token = localStorage.getItem('authToken');
     const userRole = localStorage.getItem('userRole');
-    if (!userRole) {
+    
+    if (!token || !userRole) {
       navigate('/login');
     }
+    
+    // Opcional: Verificar token con backend
+    // fetch('http://localhost:5000/api/auth/verify', {
+    //   headers: { 'Authorization': `Bearer ${token}` }
+    // })
   }, [navigate]);
 
   const handleLogout = () => {
+    localStorage.removeItem('authToken');
     localStorage.removeItem('userRole');
     localStorage.removeItem('userEmail');
-    localStorage.removeItem('isAuthenticated');
+    localStorage.removeItem('userName');
     navigate('/login');
   };
 
   const handlePropertyCreated = () => {
     setFormExpanded(false);
-    // Aquí podrías actualizar estadísticas o lista de propiedades
+    // Actualizar lista de propiedades después de crear una nueva
+    fetchProperties();
     console.log('Propiedad creada exitosamente');
+  };
+
+  const [properties, setProperties] = useState<Property[]>([]);
+
+  // Función para cargar propiedades
+  const fetchProperties = async () => {
+    try {
+      const response = await propertyAPI.getAll();
+      
+      if (response.success) {
+        setProperties(response.data);
+        console.log(`Cargadas ${response.data.length} propiedades`);
+      } else {
+        console.error('Error al cargar propiedades:', response.error);
+      }
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      console.error('Error fetching properties:', errorMessage);
+    }
+  };
+
+  // Cargar propiedades al inicio
+  useEffect(() => {
+    fetchProperties();
+  }, []);
+
+  // Calcular estadísticas
+  const getAvailableCount = () => {
+    return properties.filter(p => p.status === 'available').length;
+  };
+
+  const getFeaturedCount = () => {
+    return properties.filter(p => p.featured).length;
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
       {/* Header Admin */}
-      <Header />
-      
-      {/* Header elegante del panel */}
       <div className="bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 text-white shadow-xl">
         <div className="max-w-7xl mx-auto px-4 py-5">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -137,13 +178,13 @@ const AdminPage: React.FC = () => {
       <main className="max-w-7xl mx-auto px-4 py-6">
         {activeTab === 'properties' ? (
           <div className="space-y-6">
-            {/* Estadísticas mejoradas */}
+            {/* Estadísticas reales */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="bg-gradient-to-br from-blue-50 to-white p-4 rounded-xl border border-blue-100 shadow-sm hover:shadow-md transition-shadow duration-200">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-xs font-medium text-blue-700 uppercase tracking-wide">Total</p>
-                    <div className="text-2xl font-bold text-gray-800 mt-1">15</div>
+                    <div className="text-2xl font-bold text-gray-800 mt-1">{properties.length}</div>
                   </div>
                   <div className="bg-blue-100 p-2 rounded-lg">
                     <svg className="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
@@ -158,7 +199,9 @@ const AdminPage: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-xs font-medium text-green-700 uppercase tracking-wide">Disponibles</p>
-                    <div className="text-2xl font-bold text-gray-800 mt-1">12</div>
+                    <div className="text-2xl font-bold text-gray-800 mt-1">
+                      {getAvailableCount()}
+                    </div>
                   </div>
                   <div className="bg-green-100 p-2 rounded-lg">
                     <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -173,7 +216,9 @@ const AdminPage: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-xs font-medium text-amber-700 uppercase tracking-wide">Destacadas</p>
-                    <div className="text-2xl font-bold text-gray-800 mt-1">3</div>
+                    <div className="text-2xl font-bold text-gray-800 mt-1">
+                      {getFeaturedCount()}
+                    </div>
                   </div>
                   <div className="bg-amber-100 p-2 rounded-lg">
                     <svg className="w-5 h-5 text-amber-600" fill="currentColor" viewBox="0 0 20 20">
@@ -220,20 +265,32 @@ const AdminPage: React.FC = () => {
             <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-semibold text-gray-800">Propiedades existentes</h3>
-                <button className="text-sm text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                  </svg>
-                  Actualizar lista
-                </button>
+                <div className="flex items-center gap-3">
+                  <div className="text-sm text-gray-500">
+                    {properties.length} {properties.length === 1 ? 'propiedad' : 'propiedades'}
+                  </div>
+                  <button
+                    onClick={fetchProperties}
+                    className="text-sm text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1 px-3 py-1.5 hover:bg-blue-50 rounded-lg transition-colors"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    Actualizar lista
+                  </button>
+                </div>
               </div>
-              <div className="text-center py-8 text-gray-400">
-                <svg className="w-12 h-12 mx-auto mb-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                </svg>
-                <p className="text-sm">Lista de propiedades se cargará aquí próximamente</p>
-                <p className="text-xs mt-1">Funcionalidad de editar/eliminar en desarrollo</p>
-              </div>
+              
+             <PropertyList
+              onEdit={(property) => {
+                navigate(`/admin/propiedad/editar/${property.serial}`);
+              }}
+              onDelete={(serial) => {
+                console.log('Propiedad eliminada:', serial);
+                fetchProperties();
+              }}
+            />
+
             </div>
           </div>
         ) : activeTab === 'visits' ? (

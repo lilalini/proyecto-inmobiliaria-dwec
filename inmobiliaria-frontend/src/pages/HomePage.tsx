@@ -6,8 +6,8 @@ import type { Property, ApiResponse } from '../services/api';
 import Footer from '../components/common/Footer';
 import EmptyState from '../components/common/EmptyState';
 import { useNavigate } from 'react-router-dom';
-
-
+import TranslatedText from '../components/common/TranslatedText';
+import { TranslatedInput } from '../components/common/TranslatedInput';
 
 const HomePage: React.FC = () => {
   const navigate = useNavigate();
@@ -25,14 +25,13 @@ const HomePage: React.FC = () => {
   
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-   // FUNCIÓN DE NORMALIZACIÓN (dentro del componente)
+  // FUNCIÓN DE NORMALIZACIÓN
   const normalizeText = (text: string): string => {
     return text
       .toLowerCase()
-      .normalize("NFD")  // Separa letras de acentos
-      .replace(/[\u0300-\u036f]/g, "");  // Elimina los acentos
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
   };
-  
 
   // Cargar propiedades del backend REAL
   const loadProperties = useCallback(async (currentFilters = filters) => {
@@ -40,45 +39,42 @@ const HomePage: React.FC = () => {
       setLoading(true);
       setError(null);
       
-      // LLAMADA AL BACKEND NUEVO
       const response: ApiResponse<Property[]> = await propertyAPI.getAll();
       
       if (response.success && Array.isArray(response.data)) {
         let result = response.data;
         
-      // Filtrar por texto (en frontend por ahora)
-      if (currentFilters.searchText) {
-        const searchNormalized = normalizeText(currentFilters.searchText);
-        
-        const typeTranslations: Record<string, string> = {
-          apartment: 'apartamento',
-          house: 'casa', 
-          chalet: 'chalet',
-          penthouse: 'atico',  // SIN ACENTO - normalizeText quita acentos
-          commercial: 'local comercial',
-          office: 'oficina',
-          land: 'terreno'
-        };
-        
-        result = result.filter(property => {
-          // Normalizar todos los textos a comparar
-          const titleNormalized = normalizeText(property.title);
-          const descNormalized = normalizeText(property.description);
-          const addressNormalized = normalizeText(property.address);
-          const cityNormalized = normalizeText(property.city);
-          const spanishType = typeTranslations[property.type] || property.type;
-          const typeNormalized = normalizeText(spanishType);
+        // Filtrar por texto
+        if (currentFilters.searchText) {
+          const searchNormalized = normalizeText(currentFilters.searchText);
           
-          // Buscar en todos los campos normalizados
-          return (
-            titleNormalized.includes(searchNormalized) ||
-            descNormalized.includes(searchNormalized) ||
-            addressNormalized.includes(searchNormalized) ||
-            cityNormalized.includes(searchNormalized) ||
-            typeNormalized.includes(searchNormalized)
-          );
-        });
-}
+          const typeTranslations: Record<string, string> = {
+            apartment: 'apartamento',
+            house: 'casa', 
+            chalet: 'chalet',
+            penthouse: 'atico',
+            commercial: 'local comercial',
+            office: 'oficina',
+            land: 'terreno'
+          };
+          
+          result = result.filter(property => {
+            const titleNormalized = normalizeText(property.title);
+            const descNormalized = normalizeText(property.description);
+            const addressNormalized = normalizeText(property.address);
+            const cityNormalized = normalizeText(property.city);
+            const spanishType = typeTranslations[property.type] || property.type;
+            const typeNormalized = normalizeText(spanishType);
+            
+            return (
+              titleNormalized.includes(searchNormalized) ||
+              descNormalized.includes(searchNormalized) ||
+              addressNormalized.includes(searchNormalized) ||
+              cityNormalized.includes(searchNormalized) ||
+              typeNormalized.includes(searchNormalized)
+            );
+          });
+        }
         
         // Filtrar por ciudad
         if (currentFilters.city) {
@@ -183,139 +179,153 @@ const HomePage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header Component */}
       <Header />
       
-{/* Barra de búsqueda + Botón destacado */}
-<div className="bg-gradient-to-r from-blue-700 to-blue-900 text-white pt-4 pb-8">
-  <div className="max-w-7xl mx-auto px-4">
-    <div className="flex flex-col lg:flex-row gap-8">
-      {/* Barra de búsqueda (izquierda - 2/3) */}
-      <div className="lg:w-2/3">
-        <div className="bg-white rounded-lg shadow-lg p-4">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <input 
-              type="text" 
-              placeholder="¿Qué buscas? Ej: ático, piscina, centro..." 
-              className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-              value={filters.searchText}
-              onChange={(e) => handleFilterChange('searchText', e.target.value)}
-              aria-label="Buscar propiedades"
-            />
-            
-            <select 
-              className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-              value={filters.propertyType}
-              onChange={(e) => handleFilterChange('propertyType', e.target.value)}
-              aria-label="Tipo de propiedad"
-            >
-              <option value="">Todos los tipos</option>
-              <option value="apartment">Apartamento</option>
-              <option value="house">Casa</option>
-              <option value="chalet">Chalet</option>
-              <option value="penthouse">Ático</option>
-              <option value="commercial">Local Comercial</option>
-              <option value="office">Oficina</option>
-              <option value="land">Terreno</option>
-            </select>
-            
-            <select 
-              className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-              value={filters.city}
-              onChange={(e) => handleFilterChange('city', e.target.value)}
-              aria-label="Ciudad"
-            >
-              <option value="">Todas las ciudades</option>
-              <option value="Benidorm">Benidorm</option>
-              <option value="Marbella">Marbella</option>
-              <option value="Sotogrande">Sotogrande</option>
-              <option value="Madrid">Madrid</option>
-              <option value="Barcelona">Barcelona</option>
-              <option value="Valencia">Valencia</option>
-              <option value="Sevilla">Sevilla</option>
-            </select>
-            
-            <button 
-              className="bg-gray-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-gray-700 transition-colors"
-              onClick={clearFilters}
-            >
-              Limpiar
-            </button>
-          </div>
-          
-          <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm text-gray-600 mb-1">Precio mínimo (€)</label>
-              <input 
-                type="number"
-                placeholder="Ej: 100000"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-                value={filters.minPrice}
-                onChange={(e) => handleFilterChange('minPrice', e.target.value)}
-                aria-label="Precio mínimo"
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm text-gray-600 mb-1">Precio máximo (€)</label>
-              <input 
-                type="number"
-                placeholder="Ej: 500000"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-                value={filters.maxPrice}
-                onChange={(e) => handleFilterChange('maxPrice', e.target.value)}
-                aria-label="Precio máximo"
-              />
-            </div>
-            
-            <div className="flex items-end">
-              <button 
-                className="w-full bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
-                onClick={() => loadProperties(filters)}
-              >
-                Buscar Propiedades
-              </button>
-            </div>
-          </div>
-          
-          {(filters.searchText || filters.propertyType || filters.city || filters.minPrice || filters.maxPrice) && (
-            <div className="mt-4 p-3 bg-blue-50 rounded-lg">
-              <div className="flex items-center justify-between">
-                <div className="text-sm text-blue-700">
-                  Filtros activos: 
-                  {filters.searchText && ` "${filters.searchText}"`}
-                  {filters.propertyType && ` · ${filters.propertyType}`}
-                  {filters.city && ` · ${filters.city}`}
-                  {filters.minPrice && ` · Desde ${filters.minPrice}€`}
-                  {filters.maxPrice && ` · Hasta ${filters.maxPrice}€`}
+      {/* Barra de búsqueda + Botón destacado */}
+      <div className="bg-gradient-to-r from-blue-700 to-blue-900 text-white pt-4 pb-8">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="flex flex-col lg:flex-row gap-8">
+            {/* Barra de búsqueda */}
+            <div className="lg:w-2/3">
+              <div className="bg-white rounded-lg shadow-lg p-4">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <TranslatedInput
+                    type="text"
+                    placeholder="¿Qué buscas? Ej: ático, piscina, centro..."
+                    value={filters.searchText}
+                    onChange={(value) => handleFilterChange('searchText', value)}
+                    className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                    ariaLabel="Buscar propiedades"
+                  />
+                  
+                  <select 
+                    className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                    value={filters.propertyType}
+                    onChange={(e) => handleFilterChange('propertyType', e.target.value)}
+                    aria-label="Tipo de propiedad"
+                  >
+                    <option value=""><TranslatedText text="Todos los tipos" /></option>
+                    <option value="apartment"><TranslatedText text="Apartamento" /></option>
+                    <option value="house"><TranslatedText text="Casa" /></option>
+                    <option value="chalet"><TranslatedText text="Chalet" /></option>
+                    <option value="penthouse"><TranslatedText text="Ático" /></option>
+                    <option value="commercial"><TranslatedText text="Local Comercial" /></option>
+                    <option value="office"><TranslatedText text="Oficina" /></option>
+                    <option value="land"><TranslatedText text="Terreno" /></option>
+                  </select>
+                  
+                  <select 
+                    className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                    value={filters.city}
+                    onChange={(e) => handleFilterChange('city', e.target.value)}
+                    aria-label="Ciudad"
+                  >
+                    <option value=""><TranslatedText text="Todas las ciudades" /></option>
+                    <option value="Benidorm">Benidorm</option>
+                    <option value="Marbella">Marbella</option>
+                    <option value="Sotogrande">Sotogrande</option>
+                    <option value="Madrid">Madrid</option>
+                    <option value="Barcelona">Barcelona</option>
+                    <option value="Valencia">Valencia</option>
+                    <option value="Sevilla">Sevilla</option>
+                  </select>
+                  
+                  <button 
+                    className="bg-gray-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-gray-700 transition-colors"
+                    onClick={clearFilters}
+                    title="Limpiar filtros"
+                  >
+                    <TranslatedText text="Limpiar" />
+                  </button>
                 </div>
-                <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
-                  {properties.length} {properties.length === 1 ? 'resultado' : 'resultados'}
-                </span>
+                
+                <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm text-gray-600 mb-1">
+                      <TranslatedText text="Precio mínimo (€)" />
+                    </label>
+                    <TranslatedInput
+                      type="number"
+                      placeholder="Ej: 100000"
+                      value={filters.minPrice}
+                      onChange={(value) => handleFilterChange('minPrice', value)}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                      ariaLabel="Precio mínimo"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm text-gray-600 mb-1">
+                      <TranslatedText text="Precio máximo (€)" />
+                    </label>
+                    <TranslatedInput
+                      type="number"
+                      placeholder="Ej: 500000"
+                      value={filters.maxPrice}
+                      onChange={(value) => handleFilterChange('maxPrice', value)}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                      ariaLabel="Precio máximo"
+                    />
+                  </div>
+                  
+                  <div className="flex items-end">
+                    <button 
+                      className="w-full bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+                      onClick={() => loadProperties(filters)}
+                      title="Buscar propiedades"
+                    >
+                      <TranslatedText text="Buscar Propiedades" />
+                    </button>
+                  </div>
+                </div>
+                
+                {(filters.searchText || filters.propertyType || filters.city || filters.minPrice || filters.maxPrice) && (
+                  <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <div className="text-sm text-blue-700">
+                        <TranslatedText text="Filtros activos:" /> 
+                        {filters.searchText && ` "${filters.searchText}"`}
+                        {filters.propertyType && ` · ${filters.propertyType}`}
+                        {filters.city && ` · ${filters.city}`}
+                        {filters.minPrice && ` · `}<TranslatedText text="Desde" />{filters.minPrice && ` ${filters.minPrice}€`}
+                        {filters.maxPrice && ` · `}<TranslatedText text="Hasta" />{filters.maxPrice && ` ${filters.maxPrice}€`}
+                      </div>
+                      <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
+                        {properties.length} {properties.length === 1 ? 
+                          <TranslatedText text="resultado" /> : 
+                          <TranslatedText text="resultados" />}
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
-          )}
-        </div>
-      </div>
 
-      {/* Botón destacado - ALINEADO */}
-      <div className="lg:w-1/3 flex items-end">
-        <div className="w-full bg-white rounded-xl p-5 shadow-lg flex flex-col h-full">
-          <div className="text-center mb-6 flex-shrink-0">
-            <div className="text-gray-800 font-bold text-lg mb-2">¿Vendes tu propiedad?</div>
-            <div className="text-gray-600 text-base">Valoración gratuita y sin compromiso</div>
-          </div>
-          <div className="flex-grow"></div>
-          <div className="flex-shrink-0 text-center">
-            <button className="w-4/6 inline-block bg-gradient-to-r from-blue-600 to-blue-700 text-white py-2.5 px-4 rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 transition-all duration-200 text-base shadow-md hover:shadow-lg transform hover:-translate-y-0.5">
-              Valorar propiedad
-            </button>
+            {/* Botón destacado */}
+            <div className="lg:w-1/3 flex items-end">
+              <div className="w-full bg-white rounded-xl p-5 shadow-lg flex flex-col h-full">
+                <div className="text-center mb-6 flex-shrink-0">
+                  <div className="text-gray-800 font-bold text-lg mb-2">
+                    <TranslatedText text="¿Vendes tu propiedad?" />
+                  </div>
+                  <div className="text-gray-600 text-base">
+                    <TranslatedText text="Valoración gratuita y sin compromiso" />
+                  </div>
+                </div>
+                <div className="flex-grow"></div>
+                <div className="flex-shrink-0 text-center">
+                  <button 
+                    className="w-4/6 inline-block bg-gradient-to-r from-blue-600 to-blue-700 text-white py-2.5 px-4 rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 transition-all duration-200 text-base shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
+                    title="Valorar propiedad"
+                  >
+                    <TranslatedText text="Valorar propiedad" />
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
-    </div>
-  </div>
-</div>
       
       {/* Contenido principal */}
       <main className="max-w-7xl mx-auto py-8 px-4">
@@ -323,14 +333,18 @@ const HomePage: React.FC = () => {
           <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
             <div>
               <h2 className="text-2xl font-bold text-gray-800">
-                Propiedades destacadas
+                <TranslatedText text="Propiedades destacadas" />
               </h2>
-              <p className="text-gray-600">Encuentra la propiedad perfecta para ti</p>
+              <p className="text-gray-600">
+                <TranslatedText text="Encuentra la propiedad perfecta para ti" />
+              </p>
             </div>
             
             <div className="flex items-center gap-4">
               <div className="bg-blue-100 text-blue-800 text-sm font-medium px-4 py-2 rounded-full whitespace-nowrap">
-                {properties.length} {properties.length === 1 ? 'propiedad disponible' : 'propiedades disponibles'}
+                {properties.length} {properties.length === 1 ? 
+                  <TranslatedText text="propiedad disponible" /> : 
+                  <TranslatedText text="propiedades disponibles" />}
               </div>
               
               <div className="w-64">
@@ -351,11 +365,11 @@ const HomePage: React.FC = () => {
                     setProperties(sorted);
                   }}
                 >
-                  <option value="newest">Más recientes primero</option>
-                  <option value="price_desc">Precio: mayor a menor</option>
-                  <option value="price_asc">Precio: menor a mayor</option>
-                  <option value="bedrooms_desc">Más dormitorios primero</option>
-                  <option value="bedrooms_asc">Menos dormitorios primero</option>
+                  <option value="newest"><TranslatedText text="Más recientes primero" /></option>
+                  <option value="price_desc"><TranslatedText text="Precio: mayor a menor" /></option>
+                  <option value="price_asc"><TranslatedText text="Precio: menor a mayor" /></option>
+                  <option value="bedrooms_desc"><TranslatedText text="Más dormitorios primero" /></option>
+                  <option value="bedrooms_asc"><TranslatedText text="Menos dormitorios primero" /></option>
                 </select>
               </div>
             </div>
@@ -365,25 +379,25 @@ const HomePage: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {properties.map((property) => (
               <PropertyCard 
-              key={property.serial} 
-              property={property} 
-              onViewDetails={() => navigate(`/propiedad/${property.serial}`)}
+                key={property.serial} 
+                property={property} 
+                onViewDetails={() => navigate(`/propiedad/${property.serial}`)}
               />
             ))}
           </div>
           
-            {properties.length === 0 && !loading && (
-              <EmptyState
-                title="Sin resultados"
-                message={
-                  filters.searchText || filters.propertyType || filters.city || filters.minPrice || filters.maxPrice
-                    ? "No encontramos propiedades que coincidan con los filtros aplicados."
-                    : "No hay propiedades disponibles en este momento."
-                }
-                actionLabel="Restablecer búsqueda"
-                onAction={clearFilters}
-              />
-            )}
+          {properties.length === 0 && !loading && (
+            <EmptyState
+              title="Sin resultados"
+              message={
+                filters.searchText || filters.propertyType || filters.city || filters.minPrice || filters.maxPrice
+                  ? "No encontramos propiedades que coincidan con los filtros aplicados."
+                  : "No hay propiedades disponibles en este momento."
+              }
+              actionLabel="Restablecer búsqueda"
+              onAction={clearFilters}
+            />
+          )}
         </div>
         
         {/* Información del sistema */}
@@ -393,9 +407,12 @@ const HomePage: React.FC = () => {
               <span className="text-green-600 text-2xl">✅</span>
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-gray-800 mb-1">Sistema conectado correctamente</h3>
+              <h3 className="text-lg font-semibold text-gray-800 mb-1">
+                <TranslatedText text="Sistema conectado correctamente" />
+              </h3>
               <p className="text-gray-600">
-                Backend PostgreSQL en: <span className="font-mono text-sm bg-gray-100 px-2 py-1 rounded">http://localhost:5000/api</span>
+                <TranslatedText text="Backend PostgreSQL en:" /> 
+                <span className="font-mono text-sm bg-gray-100 px-2 py-1 rounded">http://localhost:5000/api</span>
               </p>
             </div>
           </div>

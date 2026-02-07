@@ -7,6 +7,8 @@ import PropertyDetail from './pages/PropertyDetail';
 import NotFound from './pages/NotFound';
 import LoginPage from './pages/LoginPage';
 import VisitarPropiedadPage from './pages/VisitarPropiedadPage';
+import ServicesPage from './pages/ServicesPage'; 
+import EditPropertyPage from './pages/EditPropertyPage';
 
 function App() {
   return (
@@ -20,6 +22,8 @@ function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="*" element={<NotFound />} />
         <Route path="/visitar-propiedad" element={<VisitarPropiedadPage />} />
+        <Route path="/servicios" element={<ServicesPage />} />
+        <Route path="/admin/propiedad/editar/:id" element={<EditPropertyPage />} />
       </Routes>
     </Router>
   );

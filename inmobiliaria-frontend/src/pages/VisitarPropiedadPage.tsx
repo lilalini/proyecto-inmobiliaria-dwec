@@ -7,10 +7,25 @@ import Footer from '../components/common/Footer';
 const VisitarPropiedadPage: React.FC = () => {
   // Lista de ejemplo de propiedades "destacadas" o "recientes"
   const propiedadesEjemplo = [
-    { id: 1, title: 'Ático con vistas al mar', address: 'Zona Puerto', price: '450.000 €' },
-    { id: 2, title: 'Chalet familiar con piscina', address: 'Urbanización Monteverde', price: '675.000 €' },
-    { id: 3, title: 'Apartamento en centro histórico', address: 'Casco Antiguo', price: '290.000 €' },
-  ];
+  { 
+    id: 1,
+    title: 'Ático de lujo con vistas al mar', 
+    address: 'Paseo de la Castellana 100, Benidorm', 
+    price: '1.250.000 €' 
+  },
+  { 
+    id: 2, 
+    title: 'Apartamento de lujo en primera línea de playa', 
+    address: 'Calle Mayor 45, Marbella', 
+    price: '850.000 €' 
+  },
+  { 
+    id: 3, 
+    title: 'Chalet de lujo con piscina y jardín', 
+    address: 'Calle de los Pinos 23, Sotogrande', 
+    price: '1.850.000 €' 
+  },
+];
 
   return (
     <div className="min-h-screen bg-gray-50">

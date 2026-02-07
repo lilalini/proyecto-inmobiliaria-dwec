@@ -1,3 +1,5 @@
+// tipos de propiedades y operaciones
+// utils/constants.ts
 export const PROPERTY_TYPES = [
   { value: 'apartment', label: 'Apartamento' },
   { value: 'house', label: 'Casa' },

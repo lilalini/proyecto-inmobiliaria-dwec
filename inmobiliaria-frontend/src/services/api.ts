@@ -1,3 +1,4 @@
+// api.ts - VERSIÓN CORREGIDA SIN ERRORES
 import axios from 'axios';
 
 const API_BASE_URL = 'http://localhost:5000/api';
@@ -27,11 +28,11 @@ export interface Property {
   created_at: string;
   updated_at: string;
   images: Array<{
-  id: number;
-  image_url: string;    // ← Coincide con BD y componentes
-  is_main?: boolean;    // ← Para compatibilidad
-  image_order?: number; // ← Nombre exacto de BD
-}>;
+    id: number;
+    image_url: string;
+    is_main?: boolean;
+    image_order?: number;
+  }>;
 }
 
 export interface Visit {
@@ -42,7 +43,7 @@ export interface Visit {
   status: 'scheduled' | 'completed' | 'cancelled' | 'no_show';
   notes: string;
   created_at: string;
-   property_title?: string;
+  property_title?: string;
   property_address?: string;
   client_name?: string;
   client_phone?: string;
@@ -91,8 +92,13 @@ export const propertyAPI = {
 
   create: async (propertyData: FormData): Promise<ApiResponse<Property>> => {
     try {
+      const token = localStorage.getItem('authToken');
+      
       const response = await api.post('/properties', propertyData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        }
       });
       return {
         success: true,
@@ -103,6 +109,55 @@ export const propertyAPI = {
       return {
         success: false,
         data: {} as Property,
+        error: errorMessage
+      };
+    }
+  },
+
+  // FUNCIÓN UPDATE CORREGIDA
+  update: async (serial: number, propertyData: FormData): Promise<ApiResponse<Property>> => {
+    try {
+      const token = localStorage.getItem('authToken');
+      
+      const response = await api.put(`/properties/${serial}`, propertyData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        }
+      });
+      return {
+        success: true,
+        data: response.data
+      };
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      return {
+        success: false,
+        data: {} as Property,
+        error: errorMessage
+      };
+    }
+  },
+
+  // FUNCIÓN DELETE CORREGIDA
+  delete: async (serial: number): Promise<ApiResponse<{ message: string }>> => {
+    try {
+      const token = localStorage.getItem('authToken');
+      
+      const response = await api.delete(`/properties/${serial}`, {
+        headers: {
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        }
+      });
+      return {
+        success: true,
+        data: response.data
+      };
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      return {
+        success: false,
+        data: { message: '' },
         error: errorMessage
       };
     }
@@ -124,7 +179,6 @@ export const visitAPI = {
     }
   },
 
-  // Alias para compatibilidad con código existente
   getVisits: async (): Promise<ApiResponse<Visit[]>> => {
     return visitAPI.getAll();
   },
@@ -143,4 +197,5 @@ export const visitAPI = {
     }
   }
 };
+
 export default api;
