@@ -204,7 +204,7 @@ const HomePage: React.FC = () => {
                     onChange={(e) => handleFilterChange('propertyType', e.target.value)}
                     aria-label="Tipo de propiedad"
                   >
-                    <option value=""><TranslatedText text="Todos los tipos" /></option>
+                    <option value=""><TranslatedText text="Todos los tipos"/></option>
                     <option value="apartment"><TranslatedText text="Apartamento" /></option>
                     <option value="house"><TranslatedText text="Casa" /></option>
                     <option value="chalet"><TranslatedText text="Chalet" /></option>
@@ -400,23 +400,6 @@ const HomePage: React.FC = () => {
           )}
         </div>
         
-        {/* Información del sistema */}
-        <div className="mt-12 p-6 bg-gradient-to-r from-green-50 to-blue-50 rounded-xl border border-blue-100">
-          <div className="flex items-center">
-            <div className="bg-green-100 p-3 rounded-lg mr-4">
-              <span className="text-green-600 text-2xl">✅</span>
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold text-gray-800 mb-1">
-                <TranslatedText text="Sistema conectado correctamente" />
-              </h3>
-              <p className="text-gray-600">
-                <TranslatedText text="Backend PostgreSQL en:" /> 
-                <span className="font-mono text-sm bg-gray-100 px-2 py-1 rounded">http://localhost:5000/api</span>
-              </p>
-            </div>
-          </div>
-        </div>
       </main>
       
       <Footer />

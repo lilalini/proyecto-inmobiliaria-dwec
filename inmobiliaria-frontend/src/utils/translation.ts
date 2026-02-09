@@ -59,6 +59,7 @@ export const translate = async (
   
   // Mismo idioma = no traducir
   if (finalTargetLang === sourceLang) {
+    console.log(`[translation] Mismo idioma, devolviendo original`);
     return text;
   }
 
@@ -67,19 +68,24 @@ export const translate = async (
   
   // Verificar cache primero (para traducciones ONLINE previas)
   if (translationCache[cacheKey]) {
-    console.log(`Cache HIT: "${text}"`);
+    console.log(`[translation] CACHE HIT PARA: "${text.substring(0, 50)}..."`);
+    console.log(`[translation] Valor en caché: "${translationCache[cacheKey].substring(0, 50)}..."`);
     return translationCache[cacheKey];
   }
 
-  console.log(`Traduciendo: "${text}" (${sourceLang} → ${finalTargetLang})`);
+  console.log(`[translation] NO en caché, llamando a API: "${text.substring(0, 50)}..."`);
   
   // Usar translateText (que decide si usar offline o API)
   const translated = await translateText(text, sourceLang, finalTargetLang);
   
-  // Guardar en cache SOLO si fue una traducción ONLINE (API)
-  // Las offline ya están en CRITICAL_TRANSLATIONS
-  if (translated !== text) {
+  console.log(`[translation] Resultado de translateText: "${translated.substring(0, 50)}..."`);
+  
+  // Guardar en cache SOLO si fue una traducción diferente
+  if (translated !== text && !translated.includes('error')) {
+    console.log(`[translation] Guardando en caché (traducción diferente)`);
     translationCache[cacheKey] = translated;
+  } else {
+    console.log(`[translation] No guardando en caché (mismo texto o error)`);
   }
   
   return translated;

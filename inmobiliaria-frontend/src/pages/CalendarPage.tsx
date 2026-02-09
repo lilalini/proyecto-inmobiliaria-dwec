@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import VisitCalendar from '../components/visits/VisitCalendar';
+import VisualCalendar from '../components/visits/VisualCalendar';
 import Footer from '../components/common/Footer';
 
 
@@ -45,7 +45,7 @@ const CalendarPage: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Calendario principal */}
           <div className="lg:col-span-2">
-            <VisitCalendar />
+            <VisualCalendar />
           </div>
 
           {/* Panel lateral */}

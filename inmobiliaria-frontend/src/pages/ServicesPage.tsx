@@ -5,12 +5,155 @@
 // Propósito: Mostrar todos los servicios que ofrece la inmobiliaria de forma clara y sin elementos superfluos.
 // ============================================
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Header from '../components/common/Header';
 import Footer from '../components/common/Footer';
 import { Link } from 'react-router-dom';
 
 const ServicesPage: React.FC = () => {
+  // Estado para re-render al cambiar idioma
+  const [currentLang, setCurrentLang] = useState(localStorage.getItem('appLanguage') || 'es');
+  
+  // Función de traducción offline
+  const t = (text: string): string => {
+    const lang = localStorage.getItem('appLanguage') || 'es';
+    
+    const translations: Record<string, Record<string, string>> = {
+      'en': {
+        // Títulos y textos principales
+        'Nuestros Servicios': 'Our Services',
+        'Soluciones especializadas y personalizadas para cada paso de tu proceso inmobiliario.': 
+          'Specialized and personalized solutions for every step of your real estate process.',
+        
+        // Servicios
+        'Venta de Propiedades': 'Property Sales',
+        'Gestión completa del proceso de venta, desde la valoración hasta la firma de escrituras.': 
+          'Complete management of the sales process, from valuation to signing of deeds.',
+        'Alquiler Residencial y Comercial': 'Residential and Commercial Rental',
+        'Servicio integral de alquiler con gestión de contratos y mantenimiento.': 
+          'Comprehensive rental service with contract management and maintenance.',
+        'Tasaciones Profesionales': 'Professional Appraisals',
+        'Valoración precisa de inmuebles con informes detallados y certificados.': 
+          'Accurate property valuation with detailed and certified reports.',
+        'Asesoramiento Legal': 'Legal Advice',
+        'Acompañamiento legal en todas las etapas de la transacción inmobiliaria.': 
+          'Legal support at all stages of the real estate transaction.',
+        'Gestión de Inversiones': 'Investment Management',
+        'Asesoramiento para inversores en el sector inmobiliario.': 
+          'Advice for investors in the real estate sector.',
+        'Consultoría Inmobiliaria': 'Real Estate Consulting',
+        'Soluciones personalizadas para proyectos y desarrollos inmobiliarios.': 
+          'Customized solutions for real estate projects and developments.',
+        
+        // Características de servicios
+        'Valoración profesional': 'Professional Valuation',
+        'Marketing digital': 'Digital Marketing',
+        'Gestión de visitas': 'Visit Management',
+        'Asesoramiento legal': 'Legal Advice',
+        'Búsqueda de inquilinos': 'Tenant Search',
+        'Contratación': 'Hiring',
+        'Gestión de incidencias': 'Incident Management',
+        'Cobro de rentas': 'Rent Collection',
+        'Informe técnico': 'Technical Report',
+        'Comparativa de mercado': 'Market Comparison',
+        'Certificación oficial': 'Official Certification',
+        'Asesoramiento fiscal': 'Tax Advice',
+        'Revisión de contratos': 'Contract Review',
+        'Tramitación notarial': 'Notarial Processing',
+        'Gestión hipotecaria': 'Mortgage Management',
+        'Análisis de rentabilidad': 'Profitability Analysis',
+        'Búsqueda de oportunidades': 'Opportunity Search',
+        'Gestión de cartera': 'Portfolio Management',
+        'Optimización fiscal': 'Tax Optimization',
+        'Estudios de mercado': 'Market Studies',
+        'Planificación estratégica': 'Strategic Planning',
+        'Desarrollo de proyectos': 'Project Development',
+        'Gestión de obras': 'Work Management',
+        
+        // Sección inferior
+        '¿Cómo podemos ayudarte?': 'How can we help you?',
+        'Cuéntanos qué necesitas y uno de nuestros expertos te guiará con la mejor solución, sin compromiso.':
+          'Tell us what you need and one of our experts will guide you with the best solution, no obligation.',
+        'Hablar con un asesor': 'Talk to an Advisor',
+        'Te contactaremos en menos de 24 horas.': 'We will contact you within 24 hours.',
+        'Incluye:': 'Includes:'
+      },
+      'fr': {
+        'Nuestros Servicios': 'Nos Services',
+        'Soluciones especializadas y personalizadas para cada paso de tu proceso inmobiliario.': 
+          'Solutions spécialisées et personnalisées pour chaque étape de votre processus immobilier.',
+        
+        // Servicios
+        'Venta de Propiedades': 'Vente de Propriétés',
+        'Gestión completa del proceso de venta, desde la valoración hasta la firma de escrituras.': 
+          'Gestion complète du processus de vente, de l\'évaluation à la signature des actes.',
+        'Alquiler Residencial y Comercial': 'Location Résidentielle et Commerciale',
+        'Servicio integral de alquiler con gestión de contratos y mantenimiento.': 
+          'Service de location complet avec gestion des contrats et maintenance.',
+        'Tasaciones Profesionales': 'Expertises Professionnelles',
+        'Valoración precisa de inmuebles con informes detallados y certificados.': 
+          'Évaluation précise des biens avec rapports détaillés et certifiés.',
+        'Asesoramiento Legal': 'Conseil Juridique',
+        'Acompañamiento legal en todas las étapes de la transacción inmobiliaria.': 
+          'Accompagnement juridique à toutes les étapes de la transaction immobilière.',
+        'Gestión de Inversiones': 'Gestion d\'Investissements',
+        'Asesoramiento para inversores en el sector inmobiliario.': 
+          'Conseil aux investisseurs dans le secteur immobilier.',
+        'Consultoría Inmobiliaria': 'Conseil Immobilier',
+        'Soluciones personalizadas para proyectos y desarrollos inmobiliarios.': 
+          'Solutions personnalisées pour projets et développements immobiliers.',
+        
+        // Características de servicios
+        'Valoración profesional': 'Évaluation Professionnelle',
+        'Marketing digital': 'Marketing Digital',
+        'Gestión de visitas': 'Gestion des Visites',
+        'Asesoramiento legal': 'Conseil Juridique',
+        'Búsqueda de inquilinos': 'Recherche de Locataires',
+        'Contratación': 'Recrutement',
+        'Gestión de incidencias': 'Gestion des Incidents',
+        'Cobro de rentas': 'Recouvrement des Loyers',
+        'Informe técnico': 'Rapport Technique',
+        'Comparativa de mercado': 'Comparaison de Marché',
+        'Certificación oficial': 'Certification Officielle',
+        'Asesoramiento fiscal': 'Conseil Fiscal',
+        'Revisión de contratos': 'Révision des Contrats',
+        'Tramitación notarial': 'Traitement Notarial',
+        'Gestión hipotecaria': 'Gestion Hypothécaire',
+        'Análisis de rentabilidad': 'Analyse de Rentabilité',
+        'Búsqueda de oportunidades': 'Recherche d\'Opportunités',
+        'Gestión de cartera': 'Gestion de Portefeuille',
+        'Optimización fiscal': 'Optimisation Fiscale',
+        'Estudios de mercado': 'Études de Marché',
+        'Planificación estratégica': 'Planification Stratégique',
+        'Desarrollo de proyectos': 'Développement de Projets',
+        'Gestión de obras': 'Gestion des Travaux',
+        
+        // Sección inferior
+        '¿Cómo podemos ayudarte?': 'Comment pouvons-nous vous aider?',
+        'Cuéntanos qué necesitas y uno de nuestros expertos te guiará con la mejor solución, sin compromiso.':
+          'Dites-nous ce dont vous avez besoin et un de nos experts vous guidera avec la meilleure solution, sans engagement.',
+        'Hablar con un asesor': 'Parler à un Conseiller',
+        'Te contactaremos en menos de 24 horas.': 'Nous vous contacterons dans les 24 heures.',
+        'Incluye:': 'Comprend:'
+      }
+    };
+    
+    return translations[lang]?.[text] || text;
+  };
+
+  // Escuchar cambios de idioma
+  useEffect(() => {
+    const handleLanguageChange = () => {
+      const newLang = localStorage.getItem('appLanguage') || 'es';
+      if (newLang !== currentLang) {
+        setCurrentLang(newLang);
+      }
+    };
+    
+    window.addEventListener('languageChanged', handleLanguageChange);
+    return () => window.removeEventListener('languageChanged', handleLanguageChange);
+  }, [currentLang]);
+
   const services = [
     {
       title: 'Venta de Propiedades',
@@ -82,14 +225,14 @@ const ServicesPage: React.FC = () => {
         <div className="text-center mb-16">
           <div className="w-20 h-0.5 bg-gradient-to-r from-blue-400 to-blue-600 mx-auto mb-6 rounded-full"></div>
           <h1 className="text-4xl md:text-5xl font-bold text-gray-900 tracking-tight mb-4">
-            Nuestros Servicios
+            {t('Nuestros Servicios')}
           </h1>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
-            Soluciones especializadas y personalizadas para cada paso de tu proceso inmobiliario.
+            {t('Soluciones especializadas y personalizadas para cada paso de tu proceso inmobiliario.')}
           </p>
         </div>
 
-        {/* Grid de Servicios - SIN BOTONES INTERNOS */}
+        {/* Grid de Servicios */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
           {services.map((service, index) => (
             <div
@@ -101,36 +244,43 @@ const ServicesPage: React.FC = () => {
                   <div className="text-blue-600 group-hover:scale-110 transition-transform duration-300">
                     {service.icon}
                   </div>
-                  <h3 className="text-xl font-bold text-gray-800">{service.title}</h3>
+                  <h3 className="text-xl font-bold text-gray-800">
+                    {t(service.title)}
+                  </h3>
                 </div>
 
-                <p className="text-gray-600 mb-6">{service.description}</p>
+                <p className="text-gray-600 mb-6">
+                  {t(service.description)}
+                </p>
 
                 <div className="space-y-2">
-                  <h4 className="font-semibold text-gray-700 text-sm uppercase tracking-wide">Incluye:</h4>
+                  <h4 className="font-semibold text-gray-700 text-sm uppercase tracking-wide">
+                    {t('Incluye:')}
+                  </h4>
                   <ul className="space-y-2">
                     {service.features.map((feature, idx) => (
                       <li key={idx} className="flex items-center gap-2 text-gray-600">
                         <svg className="w-4 h-4 text-green-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                         </svg>
-                        <span>{feature}</span>
+                        <span>{t(feature)}</span>
                       </li>
                     ))}
                   </ul>
                 </div>
               </div>
-              {/* Se ha eliminado el div que contenía el botón repetitivo "Solicitar Información" */}
             </div>
           ))}
         </div>
 
-        {/* Sección de Cierre - CON UN ÚNICO BOTÓN FUNCIONAL */}
+        {/* Sección de Cierre */}
         <div className="text-center border-t border-gray-200 pt-16">
           <div className="max-w-2xl mx-auto">
-            <h2 className="text-3xl font-bold text-gray-900 mb-6">¿Cómo podemos ayudarte?</h2>
+            <h2 className="text-3xl font-bold text-gray-900 mb-6">
+              {t('¿Cómo podemos ayudarte?')}
+            </h2>
             <p className="text-gray-600 text-lg mb-10">
-              Cuéntanos qué necesitas y uno de nuestros expertos te guiará con la mejor solución, sin compromiso.
+              {t('Cuéntanos qué necesitas y uno de nuestros expertos te guiará con la mejor solución, sin compromiso.')}
             </p>
             <Link
               to="/contacto"
@@ -139,10 +289,10 @@ const ServicesPage: React.FC = () => {
               <svg className="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
               </svg>
-              Hablar con un asesor
+              {t('Hablar con un asesor')}
             </Link>
             <p className="text-sm text-gray-400 mt-4">
-              Te contactaremos en menos de 24 horas.
+              {t('Te contactaremos en menos de 24 horas.')}
             </p>
           </div>
         </div>

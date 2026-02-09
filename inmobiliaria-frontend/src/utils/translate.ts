@@ -73,7 +73,18 @@ const CRITICAL_TRANSLATIONS: Record<string, Record<string, string>> = {
     'Disponible': 'Available',
     'Vendido': 'Sold',
     'Alquilado': 'Rented',
-    'En mantenimiento': 'Under maintenance'
+    'En mantenimiento': 'Under maintenance',
+    'DISPONIBLE': 'AVAILABLE',
+    'VENDIDO': 'SOLD', 
+    'ALQUILADO': 'RENTED',
+    'UBICACIÓN': 'LOCATION',
+    'Precio total': 'Total price',
+    'Dormitorios': 'Bedrooms',
+    'Baños': 'Bathrooms',
+    'm²': 'm²',
+    'IMAGEN NO DISPONIBLE': 'IMAGE NOT AVAILABLE',
+    'Propiedad': 'Property',
+    'Ver detalles': 'View details'
   },
   'fr': {
     // === HEADER ===
@@ -146,7 +157,18 @@ const CRITICAL_TRANSLATIONS: Record<string, Record<string, string>> = {
     'Disponible': 'Disponible',
     'Vendido': 'Vendu',
     'Alquilado': 'Loué',
-    'En mantenimiento': 'En maintenance'
+    'En mantenimiento': 'En maintenance',
+    'DISPONIBLE': 'DISPONIBLE',
+    'VENDIDO': 'VENDU', 
+    'ALQUILADO': 'LOUÉ',
+    'UBICACIÓN': 'EMPLACEMENT',
+    'Precio total': 'Prix total',
+    'Dormitorios': 'Chambres',
+    'Baños': 'Salles de bain',
+    'm²': 'm²',
+    'IMAGEN NO DISPONIBLE': 'IMAGE NON DISPONIBLE',
+    'Propiedad': 'Propriété',
+    'Ver detalles': 'Voir détails',
   }
 };
 
@@ -166,34 +188,71 @@ export async function translateText(
     return CRITICAL_TRANSLATIONS[to][text];
   }
 
-  // 2. SEGUNDO: Para textos que NO están offline, usar API
-  console.log(`[translate] ONLINE: "${text}" (${from} → ${to})`);
+  // 2. SEGUNDO: Para textos largos, usar Google Translate vía parámetros
+  console.log(`[translate] GOOGLE API: "${text.substring(0, 50)}..." (${from} → ${to})`);
   
   try {
-    const response = await fetch('https://libretranslate.de/translate', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        q: text,
-        source: from,
-        target: to,
-        format: 'text'
-      })
-    });
+    // Método antiguo de Google Translate (sin API key, solo para desarrollo)
+    const response = await fetch(
+      `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${from}&tl=${to}&dt=t&q=${encodeURIComponent(text)}`,
+      {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json'
+        }
+      }
+    );
 
+    console.log('[translate] Google API status:', response.status);
+    
     if (!response.ok) {
-      throw new Error(`Error en traducción: ${response.status}`);
+      // Si Google falla, intentar con un proxy CORS como fallback
+      console.log('[translate] Google falló, intentando con proxy CORS...');
+      return await translateWithCorsProxy(text, from, to);
     }
 
     const data = await response.json();
-    const translated = data.translatedText || text;
-    console.log(`[translate] OK: "${text}" → "${translated}"`);
-    return translated;
+    console.log('[translate] Google API data recibida');
+    
+    // La estructura de respuesta de Google es: [[["traducción", "original", null, null]]]
+    if (data && data[0] && data[0][0] && data[0][0][0]) {
+      const translated = data[0][0][0];
+      console.log(`[translate] GOOGLE OK: "${text.substring(0, 30)}..." → "${translated.substring(0, 30)}..."`);
+      return translated;
+    }
+    
+    console.log('[translate] Google no devolvió traducción válida');
+    return text;
+    
   } catch (error) {
-    console.error('[translate] ERROR:', text, error);
-    // Si la API falla, mostrar texto original
+    console.error('[translate] ERROR en Google API:', error);
+    return text;
+  }
+}
+
+// Función de respaldo con proxy CORS
+async function translateWithCorsProxy(text: string, from: string, to: string): Promise<string> {
+  try {
+    const proxyUrl = 'https://corsproxy.io/?';
+    const targetUrl = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${from}&tl=${to}&dt=t&q=${encodeURIComponent(text)}`;
+    
+    const response = await fetch(proxyUrl + encodeURIComponent(targetUrl), {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json'
+      }
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      if (data && data[0] && data[0][0] && data[0][0][0]) {
+        console.log(`[translate] PROXY OK: traducción recibida via proxy`);
+        return data[0][0][0];
+      }
+    }
+    return text;
+  } catch (error) {
+    console.error('[translate] ERROR en proxy:', error);
     return text;
   }
 }
