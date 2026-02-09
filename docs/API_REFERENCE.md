@@ -3,187 +3,122 @@
 ## Base URL
 http://localhost:5000/api
 
-## Endpoints Principales
+## Autenticación
 
-### 1. Obtener todas las propiedades
-GET /properties
+| Método | Endpoint | Descripción | Permisos |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/auth/login` | Iniciar sesión de usuario. | Pública |
+| `GET` | `/auth/verify` | Verificar validez del token actual. | Requiere Token |
 
-```
-
-### 2. Obtener una propiedad específica
-GET /properties/:id
-
-```
-
-### 3. Obtener propiedades con filtros
-GET /properties?city=Madrid&type=villa&minPrice=100000&maxPrice=500000
-
-Parámetros disponibles:
-- city: Madrid, Barcelona, Valencia, Sevilla, etc.
-- type: apartment, house, villa, townhouse, etc.
-- operation: sale, rent
-- minPrice: número mínimo
-- maxPrice: número máximo
-- bedrooms: número de habitaciones
-- bathrooms: número de baños
-
-```
-
-### 4. Crear una nueva propiedad
-POST /properties
-
-Cuerpo de la solicitud (JSON):
+**Ejemplo de cuerpo para `/auth/login`:**
+```json
 {
-  "title": "Piso en el centro",
-  "description": "Amplio piso con vistas...",
-  "city": "Madrid",
-  "address": "Calle Mayor 123",
-  "type": "apartment",
-  "operation": "sale",
-  "price": 250000,
-  "bedrooms": 3,
-  "bathrooms": 2,
-  "square_meters": 120,
-  "agent_id": 1
+  "email": "usuario@ejemplo.com",
+  "password": "contraseñaSegura123"
 }
 
 ```
 
-### 5. Actualizar una propiedad
-PUT /properties/:id
+# Propiedades
 
-Cuerpo de la solicitud (JSON):
+| Método | Endpoint | Descripción | Permisos |
+|--------|----------|-------------|----------|
+| `GET` | `/properties` | Obtiene el listado de todas las propiedades. Admite filtros. | Pública |
+| `GET` | `/properties/:id` | Obtiene los detalles de una propiedad específica por su ID. | Pública |
+| `POST` | `/properties` | Crea una nueva propiedad. **Usa `multipart/form-data` para imágenes.** | Solo Admin |
+| `PUT` | `/properties/:id` | Actualiza la información de una propiedad existente. | Solo Admin |
+| `DELETE` | `/properties/:id` | Elimina una propiedad del sistema. | Solo Admin |
+
+## Parámetros de consulta para `GET /properties`
+
+* `city`: Filtrar por ciudad (ej. `Madrid`).
+* `type`: Filtrar por tipo de propiedad (ej. `apartment`, `house`).
+* `operation`: Filtrar por operación (ej. `sale`, `rent`).
+* `minPrice` / `maxPrice`: Filtrar por rango de precio.
+* `bedrooms` / `bathrooms`: Filtrar por número de habitaciones o baños.
+
+## Ejemplo de consulta filtrada
+
+```json
+GET /api/properties?city=Madrid&type=apartment&minPrice=100000
+
+```
+# Visitas
+
+| Método | Endpoint | Descripción | Permisos |
+|--------|----------|-------------|----------|
+| `POST` | `/visits` | Programa una nueva visita a una propiedad. | Pública |
+| `GET` | `/visits/property/:propertySerial` | Obtiene todas las visitas asociadas a una    propiedad. | Pública |
+| `GET` | `/visits/calendar` | Obtiene visitas para un rango de fechas, útil para calendarios. | Pública |
+| `GET` | `/visits` | Obtiene el listado completo de todas las visitas. | Solo Admin |
+| `PUT` | `/visits/:id/status` | Actualiza el estado de una visita programada. | Solo Admin |
+| `DELETE` | `/visits/:id` | Elimina una visita del sistema. | Solo Admin |
+
+## Ejemplo de cuerpo para `POST /visits`
+
+```json
 {
-  "price": 260000,
-  "description": "Nueva descripción..."
+  "property_id": 123,
+  "client_name": "Ana García López",
+  "client_email": "ana.garcia@email.com",
+  "client_phone": "+34 612 345 678",
+  "visit_date": "2024-02-20T16:30:00.000Z",
+  "notes": "Interesada en la reforma de la cocina."
+}
+
+```
+## Ejemplo de cuerpo para `POST /clients`
+```json
+{
+  "name": "Carlos Méndez",
+  "email": "carlos.mendez@email.com",
+  "phone": "645 87 41 25",
+  "type": "buyer"
+}
+```
+**Valores aceptados para el campo `type`:** `buyer`, `seller`, `tenant`, `landlord`.
+
+# Códigos de Estado HTTP
+
+| Código | Significado |
+|--------|-------------|
+| `200 OK` | La solicitud se completó con éxito. |
+| `201 Created` | Un nuevo recurso fue creado con éxito (ej. POST). |
+| `400 Bad Request` | Error en los datos enviados por el cliente. |
+| `401 Unauthorized` | Faltan credenciales de autenticación o son inválidas. |
+| `403 Forbidden` | El usuario autenticado no tiene permisos para la acción. |
+| `404 Not Found` | El recurso solicitado no existe. |
+| `500 Internal Server Error` | Error genérico del servidor. |
+
+# Estructura de Respuesta
+
+Todas las respuestas siguen un formato JSON consistente:
+
+## Éxito
+
+```json
+{
+  "success": true,
+  "data": { ... }, // o [ ... ] para listas
+  "message": "Operación completada." // Opcional
 }
 
 ```
 
-### 6. Eliminar una propiedad
-DELETE /properties/:id
 
-```
+## Error
 
-## Endpoints de Imágenes
-
-### 1. Obtener imágenes de una propiedad
-GET /properties/:id/images
-
-```
-
-### 2. Subir imagen para una propiedad
-POST /properties/:id/images
-
-Form-data:
-- image: archivo de imagen
-
-```
-
-## Endpoints de Usuarios/Agentes
-
-### 1. Obtener información de un agente
-GET /agents/:id
-
-```
-
-### 2. Registrar nuevo usuario
-POST /auth/register
-
-Cuerpo de la solicitud (JSON):
+```json
 {
-  "name": "Juan Pérez",
-  "email": "juan@email.com",
-  "password": "contraseña123",
-  "role": "agent"
+  "success": false,
+  "error": "Descripción clara del error.",
+  "data": null
 }
 
 ```
+## Nota sobre permisos
 
-### 3. Iniciar sesión
-POST /auth/login
+* **Pública**: Accesible sin autenticación.
+* **Requiere Token**: Necesita encabezado `Authorization: Bearer <JWT_TOKEN>`.
+* **Solo Admin**: Necesita token de un usuario con rol de administrador.
 
-Cuerpo de la solicitud (JSON):
-{
-  "email": "juan@email.com",
-  "password": "contraseña123"
-}
-
-Respuesta:
-{
-  "token": "jwt_token_here",
-  "user": {
-    "id": 1,
-    "name": "Juan Pérez",
-    "email": "juan@email.com",
-    "role": "agent"
-  }
-}
-
-```
-
-## Endpoints de Visitas
-
-### 1. Crear una visita
-POST /visits
-
-Cuerpo de la solicitud (JSON):
-{
-  "property_id": 1,
-  "client_name": "María García",
-  "client_email": "maria@email.com",
-  "client_phone": "612345678",
-  "visit_date": "2024-02-15T10:30:00Z",
-  "notes": "Interesado en ver la terraza"
-}
-
-```
-
-### 2. Obtener visitas de una propiedad
-GET /properties/:id/visits
-
-```
-
-### 3. Actualizar estado de visita
-PUT /visits/:id
-
-Cuerpo de la solicitud (JSON):
-{
-  "status": "completed"
-}
-
-Estados disponibles: scheduled, completed, cancelled, no_show
-
-```
-
-## Códigos de Respuesta
-
-- 200 OK: Solicitud exitosa
-- 201 Created: Recurso creado exitosamente
-- 400 Bad Request: Datos incorrectos
-- 401 Unauthorized: No autenticado
-- 403 Forbidden: No autorizado
-- 404 Not Found: Recurso no encontrado
-- 500 Internal Server Error: Error del servidor
-
-```
-
-## Ejemplo de Uso con curl
-
-Obtener todas las propiedades:
-curl http://localhost:5000/api/properties
-
-```
-
-Obtener propiedades en Madrid:
-curl "http://localhost:5000/api/properties?city=Madrid"
-
-```
-
-Crear nueva propiedad (con token):
-curl -X POST http://localhost:5000/api/properties \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer tu_token_jwt" \
-  -d '{"title":"Piso nuevo","city":"Barcelona","price":300000}'
-
-```
