@@ -1,351 +1,520 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import AdminSidebar from '../components/admin/AdminSidebar';
+import AdminHeader from '../components/admin/AdminHeader';
 import PropertyForm from '../components/admin/PropertyForm';
-import Footer from '../components/common/Footer';
 import PropertyList from '../components/admin/PropertyList';
-import { propertyAPI } from '../services/api';
-import type { Property } from '../services/api';
+import VisitList from '../components/admin/VisitList';
+import Footer from '../components/common/Footer';
+import { propertyAPI, visitAPI } from '../services/api';
+import type { Property, Visit } from '../services/api';
+import StatsCard from '../components/admin/StatsCard';
+import { BuildingIcon, CalendarIcon, CheckIcon, StarIcon } from '../components/common/Icons';
+import VisualCalendar from '../components/visits/VisualCalendar';
+import ClientesTable from '../components/admin/ClientesTable';
+import NewClientModal from '../components/admin/NewClientModal';
 
-const AdminPage: React.FC = () => {
+  const AdminPage: React.FC = () => {
+
+  const [showNewClientModal, setShowNewClientModal] = useState(false);
+  const [refreshClientsKey, setRefreshClientsKey] = useState(0);
+
+  // 3. FUNCIÓN PARA REFRESCAR CLIENTES (después de otros fetch functions)
+  const refreshClientes = () => {
+    setRefreshClientsKey(prev => prev + 1); // Forza re-render de ClientesTable
+  };
+
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'properties' | 'visits' | 'users'>('properties');
+  const location = useLocation();
+  
+  // Obtener datos del usuario desde localStorage
+  const [userName, setUserName] = useState('');
+  const [userRole, setUserRole] = useState('');
+  
+  const [properties, setProperties] = useState<Property[]>([]);
+  const [visits, setVisits] = useState<Visit[]>([]);
+  const [loading, setLoading] = useState({ properties: true, visits: true });
   const [formExpanded, setFormExpanded] = useState(false);
 
+  // Determinar la vista activa basada en la URL
+  const getActiveView = useCallback(() => {
+  if (location.pathname.includes('/admin/visits')) return 'visits';
+  if (location.pathname.includes('/admin/calendar')) return 'calendar';
+  if (location.pathname.includes('/admin/clients')) return 'clients';
+  if (location.pathname.includes('/admin/reports')) return 'reports';
+  if (location.pathname.includes('/admin/properties')) return 'properties';
+  return 'dashboard';
+}, [location.pathname]);
+
+  const [activeView, setActiveView] = useState(getActiveView());
+
+  // Actualizar vista activa cuando cambia la URL
   useEffect(() => {
+    setActiveView(getActiveView());
+  }, [getActiveView]);
+
+  // Cargar datos del usuario
+  useEffect(() => {
+    const storedName = localStorage.getItem('userName');
+    const storedRole = localStorage.getItem('userRole');
+    
+    if (storedName) setUserName(storedName);
+    if (storedRole) setUserRole(storedRole);
+
     const token = localStorage.getItem('authToken');
-    const userRole = localStorage.getItem('userRole');
-    
-    if (!token || !userRole) {
+    if (!token) {
       navigate('/login');
+      return;
     }
-    
-    // Opcional: Verificar token con backend
-    // fetch('http://localhost:5000/api/auth/verify', {
-    //   headers: { 'Authorization': `Bearer ${token}` }
-    // })
   }, [navigate]);
 
-  const handleLogout = () => {
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('userRole');
-    localStorage.removeItem('userEmail');
-    localStorage.removeItem('userName');
-    navigate('/login');
-  };
-
-  const handlePropertyCreated = () => {
-    setFormExpanded(false);
-    // Actualizar lista de propiedades después de crear una nueva
-    fetchProperties();
-    console.log('Propiedad creada exitosamente');
-  };
-
-  const [properties, setProperties] = useState<Property[]>([]);
-
-  // Función para cargar propiedades
+  // Cargar propiedades
   const fetchProperties = async () => {
+    setLoading(prev => ({ ...prev, properties: true }));
     try {
       const response = await propertyAPI.getAll();
-      
       if (response.success) {
         setProperties(response.data);
-        console.log(`Cargadas ${response.data.length} propiedades`);
-      } else {
-        console.error('Error al cargar propiedades:', response.error);
       }
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
-      console.error('Error fetching properties:', errorMessage);
+    } catch (error) {
+      console.error('Error fetching properties:', error);
+    } finally {
+      setLoading(prev => ({ ...prev, properties: false }));
     }
   };
 
-  // Cargar propiedades al inicio
-  useEffect(() => {
-    fetchProperties();
-  }, []);
-
-  // Calcular estadísticas
-  const getAvailableCount = () => {
-    return properties.filter(p => p.status === 'available').length;
+  // Cargar visitas
+  const fetchVisits = async () => {
+    setLoading(prev => ({ ...prev, visits: true }));
+    try {
+      const response = await visitAPI.getAll();
+      if (response.success) {
+        setVisits(response.data);
+      }
+    } catch (error) {
+      console.error('Error fetching visits:', error);
+    } finally {
+      setLoading(prev => ({ ...prev, visits: false }));
+    }
   };
 
-  const getFeaturedCount = () => {
-    return properties.filter(p => p.featured).length;
+  // Cargar datos iniciales
+  useEffect(() => {
+    fetchProperties();
+    fetchVisits();
+  }, []);
+
+  // Manejar creación de propiedad
+  const handlePropertyCreated = () => {
+    setFormExpanded(false);
+    fetchProperties();
+  };
+
+// Calcular estadísticas
+const availableCount = properties.filter(p => p.status === 'available').length;
+const featuredCount = properties.filter(p => p.featured).length;
+const scheduledVisits = visits.filter(v => v.status === 'scheduled').length;
+
+// Calcular visitas de esta semana 
+const visitsThisWeek = visits.filter(v => {
+  try {
+    const visitDate = new Date(v.visit_date);
+    const now = new Date();
+    const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    return visitDate >= oneWeekAgo && v.status === 'scheduled';
+  } catch (error) {
+    console.error('Error parsing date:', v.visit_date, error);
+    return false;
+  }
+}).length;
+
+// Calcular visitas de hoy
+const visitsToday = visits.filter(v => {
+  try {
+    const visitDate = new Date(v.visit_date);
+    const today = new Date();
+    return visitDate.toDateString() === today.toDateString() && v.status === 'scheduled';
+  } catch (error) {
+    console.error('Error parsing date for today:', v.visit_date, error);
+    return false;
+  }
+}).length;
+
+// DEBUG: Verificar datos
+/*console.log('=== ESTADÍSTICAS DEBUG ===');
+console.log('Total visitas:', visits.length);
+console.log('Scheduled visits:', scheduledVisits);
+console.log('Visitas esta semana:', visitsThisWeek);
+console.log('Visitas hoy:', visitsToday);
+visits.forEach((v, i) => {
+  console.log(`Visita ${i}:`, {
+    id: v.id,
+    status: v.status,
+    date: v.visit_date,
+    isScheduled: v.status === 'scheduled'
+  });
+});*/
+
+  //const today = new Date().toISOString().split('T')[0];
+  //const visitsToday = visits.filter(v => v.visit_date.includes(today)).length;
+
+
+  // Renderizar contenido basado en la vista activa
+  const renderContent = () => {
+    switch (activeView) {
+      case 'dashboard':
+        return (
+          <div className="space-y-8">
+            {/* Estadísticas del dashboard */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+              <StatsCard
+                title="Propiedades totales"
+                value={properties.length}
+                description={`${availableCount} disponibles`}
+                icon={<BuildingIcon size="lg" />}
+                color="blue"
+              />
+              <StatsCard
+                title="Visitas programadas"
+                value={loading.visits ? '...' : scheduledVisits}
+                description={
+                  loading.visits ? 'Cargando...' : 
+                  `${visitsThisWeek} esta semana • ${visitsToday} hoy`
+                }
+                icon={<CalendarIcon size="lg" />}
+                color="purple"
+              />
+
+              <StatsCard
+                title="Destacadas"
+                value={featuredCount}
+                description="Premium selection"
+                icon={<StarIcon size="lg" />}
+                color="amber"
+              />
+
+              <StatsCard
+                title="Tasa de disponibilidad"
+                value={
+                  properties.length > 0 
+                    ? `${Math.round((availableCount / properties.length) * 100)}%`
+                    : '0%'
+                }
+                description="Del portfolio total"
+                icon={<CheckIcon size="lg" />}
+                color="green"
+              />
+            </div>
+
+            {/* Sección de propiedades */}
+            <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h2 className="text-xl font-bold text-gray-800">Gestión de Propiedades</h2>
+                  <p className="text-gray-600">Administra todas las propiedades del sistema</p>
+                </div>
+                <button
+                  onClick={() => setFormExpanded(!formExpanded)}
+                  className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                >
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                  </svg>
+                  {formExpanded ? 'Cancelar' : 'Nueva Propiedad'}
+                </button>
+              </div>
+
+              {formExpanded && (
+                <div className="mb-8">
+                  <PropertyForm onSuccess={handlePropertyCreated} />
+                </div>
+              )}
+
+              <div className="mt-6">
+                <h3 className="text-lg font-semibold text-gray-800 mb-4">Propiedades recientes</h3>
+                {loading.properties ? (
+                  <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                    <p className="mt-2 text-gray-500">Cargando propiedades...</p>
+                  </div>
+                ) : (
+                  <PropertyList
+                    properties={properties.slice(0, 5)}
+                    onEdit={(property) => navigate(`/admin/propiedad/editar/${property.serial}`)}
+                    onDelete={(serial) => {
+                      if (window.confirm('¿Eliminar esta propiedad?')) {
+                        console.log('Eliminar:', serial);
+                        fetchProperties();
+                      }
+                    }}
+                  />
+                )}
+              </div>
+            </div>
+
+            {/* Sección de visitas recientes */}
+            <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h2 className="text-xl font-bold text-gray-800">Visitas Recientes</h2>
+                  <p className="text-gray-600">Últimas visitas solicitadas</p>
+                </div>
+                <button
+                  onClick={() => navigate('/admin/visits')}
+                  className="inline-flex items-center px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                >
+                  Ver todas
+                </button>
+              </div>
+
+              {loading.visits ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto"></div>
+                  <p className="mt-2 text-gray-500">Cargando visitas...</p>
+                </div>
+              ) : visits.length > 0 ? (
+                <VisitList
+                  visits={visits.slice(0, 5)}
+                  onRefresh={fetchVisits}
+                />
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  No hay visitas programadas
+                </div>
+              )}
+            </div>
+          </div>
+        );
+
+      case 'properties':
+        return (
+          <div className="space-y-8">
+            <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h2 className="text-xl font-bold text-gray-800">Todas las Propiedades</h2>
+                  <p className="text-gray-600">Gestión completa del catálogo de propiedades</p>
+                </div>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setFormExpanded(!formExpanded)}
+                    className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  >
+                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                    </svg>
+                    {formExpanded ? 'Cancelar' : 'Nueva Propiedad'}
+                  </button>
+                  <button
+                    onClick={fetchProperties}
+                    className="inline-flex items-center px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                  >
+                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    Actualizar
+                  </button>
+                </div>
+              </div>
+
+              {formExpanded && (
+                <div className="mb-8">
+                  <PropertyForm onSuccess={handlePropertyCreated} />
+                </div>
+              )}
+
+              {loading.properties ? (
+                <div className="text-center py-12">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+                  <p className="mt-4 text-gray-500">Cargando propiedades...</p>
+                </div>
+              ) : (
+                <PropertyList
+                  properties={properties}
+                  onEdit={(property) => navigate(`/admin/propiedad/editar/${property.serial}`)}
+                  onDelete={(serial) => {
+                    if (window.confirm('¿Eliminar esta propiedad?')) {
+                      console.log('Eliminar:', serial);
+                      fetchProperties();
+                    }
+                  }}
+                />
+              )}
+            </div>
+          </div>
+        );
+
+      case 'visits':
+        return (
+          <div className="space-y-8">
+            <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+              {loading.visits ? (
+                <div className="text-center py-12">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
+                  <p className="mt-4 text-gray-500">Cargando visitas...</p>
+                </div>
+              ) : (
+                <VisitList
+                  visits={visits}
+                  onRefresh={fetchVisits}
+                />
+              )}
+            </div>
+          </div>
+        );
+// Vistas de calendario, usuarios y reportes pueden ser añadidas aquí
+       case 'calendar':
+  return (
+    <div className="space-y-8">
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden"> {/* Quitamos el padding interno general */}
+        {/* Encabezado del calendario */}
+        <div className="p-6 border-b border-gray-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-xl font-bold text-gray-800">Calendario de Visitas</h2>
+              <p className="text-gray-600">Vista interactiva de todas las visitas programadas</p>
+            </div>
+            <button
+              onClick={() => window.location.reload()}
+              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            >
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              Actualizar
+            </button>
+          </div>
+        </div>
+        
+        {/* CONTENEDOR PRINCIPAL DEL CALENDARIO - SIN PADDING, CON ALTURA FIJA */}
+        <div className="p-0"> {/* Padding 0 para que el calendario respire */}
+          <div className="h-[70vh] min-h-[500px]"> {/* Altura grande y responsiva */}
+            <VisualCalendar />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  
+case 'clients':
+  return (
+    <div className="space-y-8">
+      <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-xl font-bold text-gray-800">Gestión de Clientes</h2>
+            <p className="text-gray-600">Administra clientes registrados (online y oficina)</p>
+          </div>
+          <button
+            onClick={() => setShowNewClientModal(true)}  // ← Botón funcional
+            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+            </svg>
+            Nuevo Cliente
+          </button>
+        </div>
+        
+        {/* Tabla de clientes con capacidad de refresh */}
+        <ClientesTable 
+          key={refreshClientsKey}  // ← Fuerza re-render al cambiar
+          onRefresh={refreshClientes}
+        />
+      </div>
+
+      {/* Modal para nuevo cliente */}
+      <NewClientModal
+        isOpen={showNewClientModal}
+        onClose={() => setShowNewClientModal(false)}
+        onSuccess={() => {
+          refreshClientes();  // ← Refresca tabla después de crear
+          setShowNewClientModal(false);
+        }}
+      />
+    </div>
+  );
+
+case 'reports':
+  return (
+    <div className="space-y-8">
+      <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-xl font-bold text-gray-800">Reportes y Análisis</h2>
+            <p className="text-gray-600">Genera informes de ventas, visitas y rendimiento</p>
+          </div>
+          <button
+            onClick={() => {/* Lógica para exportar */}}
+            className="inline-flex items-center px-4 py-2 border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50"
+          >
+            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            Exportar Datos
+          </button>
+        </div>
+        <div className="text-center py-12 border-2 border-dashed border-gray-300 rounded-lg">
+          <svg className="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+          </svg>
+          <h3 className="text-lg font-medium text-gray-700 mb-2">Módulo de reportes en desarrollo</h3>
+          <p className="text-gray-500 max-w-md mx-auto">
+            Próximamente podrás generar reportes personalizados de visitas, propiedades y rendimiento comercial.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+
+      default:
+        return (
+          <div className="bg-white rounded-xl border border-gray-200 p-12 text-center shadow-sm">
+            <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <h2 className="text-2xl font-bold text-gray-800 mb-3">Sección en desarrollo</h2>
+            <p className="text-gray-600 mb-6">Esta funcionalidad estará disponible próximamente.</p>
+            <button
+              onClick={() => navigate('/admin')}
+              className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            >
+              Volver al Dashboard
+            </button>
+          </div>
+        );
+    }
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
-      {/* Header Admin */}
-      <div className="bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 text-white shadow-xl">
-        <div className="max-w-7xl mx-auto px-4 py-5">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-2.5 rounded-xl shadow-md">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-              </div>
-              <div>
-                <h1 className="text-xl font-bold tracking-tight">Panel de Control</h1>
-                <p className="text-blue-200 text-sm mt-0.5">Gestión centralizada del sistema</p>
-              </div>
-            </div>
-            
-            <div className="flex items-center gap-3">
-              <div className="bg-white/10 backdrop-blur-sm px-3.5 py-1.5 rounded-lg border border-white/20 shadow-sm">
-                <div className="text-xs font-medium flex items-center gap-1.5">
-                  <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-                  </svg>
-                  Administrador
-                </div>
-                <div className="text-gray-300 text-[10px] mt-0.5">Sesión activa</div>
-              </div>
-              <button 
-                onClick={handleLogout}
-                className="flex items-center gap-2 bg-white text-gray-800 px-3.5 py-1.5 rounded-lg font-medium hover:bg-gray-100 transition-all duration-200 text-sm shadow-sm hover:shadow-md active:scale-95"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                </svg>
-                Salir
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+      {/* Sidebar */}
+      <AdminSidebar userName={userName} userRole={userRole} />
+      
+      {/* Contenido principal con margen para sidebar */}
+      <div className="ml-64">
+        {/* Header */}
+        <AdminHeader 
+          title={activeView === 'dashboard' ? 'Dashboard Principal' : 
+                activeView === 'properties' ? 'Gestión de Propiedades' :
+                activeView === 'visits' ? 'Gestión de Visitas' :
+                'Panel de Administración'}
+         /* subtitle={activeView === 'dashboard' ? 'Vista general del sistema' :
+                   activeView === 'properties' ? 'Administra el catálogo completo' :
+                   activeView === 'visits' ? 'Control de visitas programadas' :
+                   'Gestión centralizada'}*/
+        />
 
-      {/* Tabs de navegación mejorados */}
-      <div className="bg-white border-b border-gray-200 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="flex">
-            <button
-              onClick={() => setActiveTab('properties')}
-              className={`px-6 py-3.5 font-medium text-sm transition-all duration-200 relative flex items-center gap-2 ${
-                activeTab === 'properties'
-                  ? 'text-blue-600 bg-blue-50'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-              }`}
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-              </svg>
-              Propiedades
-              {activeTab === 'properties' && (
-                <span className="absolute bottom-0 left-0 w-full h-0.5 bg-blue-600"></span>
-              )}
-            </button>
-            
-            <button
-              onClick={() => setActiveTab('visits')}
-              className={`px-6 py-3.5 font-medium text-sm transition-all duration-200 relative flex items-center gap-2 ${
-                activeTab === 'visits'
-                  ? 'text-green-600 bg-green-50'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-              }`}
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-              Visitas
-              {activeTab === 'visits' && (
-                <span className="absolute bottom-0 left-0 w-full h-0.5 bg-green-600"></span>
-              )}
-            </button>
-            
-            <button
-              onClick={() => setActiveTab('users')}
-              className={`px-6 py-3.5 font-medium text-sm transition-all duration-200 relative flex items-center gap-2 ${
-                activeTab === 'users'
-                  ? 'text-purple-600 bg-purple-50'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-              }`}
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-              </svg>
-              Usuarios
-              {activeTab === 'users' && (
-                <span className="absolute bottom-0 left-0 w-full h-0.5 bg-purple-600"></span>
-              )}
-            </button>
-          </div>
-        </div>
-      </div>
+        {/* Contenido */}
+        <main className="p-8">
+          {renderContent()}
+        </main>
 
-      {/* Contenido principal */}
-      <main className="max-w-7xl mx-auto px-4 py-6">
-        {activeTab === 'properties' ? (
-          <div className="space-y-6">
-            {/* Estadísticas reales */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-gradient-to-br from-blue-50 to-white p-4 rounded-xl border border-blue-100 shadow-sm hover:shadow-md transition-shadow duration-200">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs font-medium text-blue-700 uppercase tracking-wide">Total</p>
-                    <div className="text-2xl font-bold text-gray-800 mt-1">{properties.length}</div>
-                  </div>
-                  <div className="bg-blue-100 p-2 rounded-lg">
-                    <svg className="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                </div>
-                <div className="text-xs text-gray-500 mt-2">Propiedades en sistema</div>
-              </div>
-              
-              <div className="bg-gradient-to-br from-green-50 to-white p-4 rounded-xl border border-green-100 shadow-sm hover:shadow-md transition-shadow duration-200">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs font-medium text-green-700 uppercase tracking-wide">Disponibles</p>
-                    <div className="text-2xl font-bold text-gray-800 mt-1">
-                      {getAvailableCount()}
-                    </div>
-                  </div>
-                  <div className="bg-green-100 p-2 rounded-lg">
-                    <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  </div>
-                </div>
-                <div className="text-xs text-gray-500 mt-2">Listas para publicar</div>
-              </div>
-              
-              <div className="bg-gradient-to-br from-amber-50 to-white p-4 rounded-xl border border-amber-100 shadow-sm hover:shadow-md transition-shadow duration-200">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs font-medium text-amber-700 uppercase tracking-wide">Destacadas</p>
-                    <div className="text-2xl font-bold text-gray-800 mt-1">
-                      {getFeaturedCount()}
-                    </div>
-                  </div>
-                  <div className="bg-amber-100 p-2 rounded-lg">
-                    <svg className="w-5 h-5 text-amber-600" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                    </svg>
-                  </div>
-                </div>
-                <div className="text-xs text-gray-500 mt-2">Propiedades premium</div>
-              </div>
-            </div>
-
-            {/* Formulario colapsable */}
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-              <div 
-                className="flex items-center justify-between px-5 py-3.5 cursor-pointer hover:bg-gray-50 transition-colors border-b border-gray-100"
-                onClick={() => setFormExpanded(!formExpanded)}
-              >
-                <div className="flex items-center gap-3">
-                  <div className={`transform transition-transform duration-200 ${formExpanded ? 'rotate-90' : ''}`}>
-                    <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-                    </svg>
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-gray-800">Agregar nueva propiedad</h3>
-                    <p className="text-xs text-gray-500">Completa los datos para publicar en el portal</p>
-                  </div>
-                </div>
-                <span className={`text-xs font-medium px-2.5 py-1 rounded-full transition-colors ${formExpanded ? 'bg-gray-100 text-gray-700' : 'bg-blue-100 text-blue-700'}`}>
-                  {formExpanded ? 'Ocultar formulario' : 'Expandir formulario'}
-                </span>
-              </div>
-              
-              {formExpanded && (
-                <div className="p-5">
-                  <PropertyForm 
-                    onSuccess={handlePropertyCreated}
-                  />
-                </div>
-              )}
-            </div>
-
-            {/* Lista de propiedades existentes */}
-            <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold text-gray-800">Propiedades existentes</h3>
-                <div className="flex items-center gap-3">
-                  <div className="text-sm text-gray-500">
-                    {properties.length} {properties.length === 1 ? 'propiedad' : 'propiedades'}
-                  </div>
-                  <button
-                    onClick={fetchProperties}
-                    className="text-sm text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1 px-3 py-1.5 hover:bg-blue-50 rounded-lg transition-colors"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                    </svg>
-                    Actualizar lista
-                  </button>
-                </div>
-              </div>
-              
-             <PropertyList
-              onEdit={(property) => {
-                navigate(`/admin/propiedad/editar/${property.serial}`);
-              }}
-              onDelete={(serial) => {
-                console.log('Propiedad eliminada:', serial);
-                fetchProperties();
-              }}
-            />
-
-            </div>
-          </div>
-        ) : activeTab === 'visits' ? (
-          <div className="bg-white rounded-xl border border-gray-200 p-8 text-center shadow-sm">
-            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-            </div>
-            <h2 className="text-xl font-bold text-gray-800 mb-2">Gestión de Visitas</h2>
-            <p className="text-gray-600 mb-4">Calendario y gestión de visitas programadas</p>
-            <div className="inline-block px-4 py-2 bg-green-50 text-green-700 rounded-lg text-sm font-medium">
-              Próximamente
-            </div>
-          </div>
-        ) : (
-          <div className="bg-white rounded-xl border border-gray-200 p-8 text-center shadow-sm">
-            <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-              </svg>
-            </div>
-            <h2 className="text-xl font-bold text-gray-800 mb-2">Gestión de Usuarios</h2>
-            <p className="text-gray-600 mb-4">Administración de usuarios y agentes</p>
-            <div className="inline-block px-4 py-2 bg-purple-50 text-purple-700 rounded-lg text-sm font-medium">
-              Próximamente
-            </div>
-          </div>
-        )}
-      </main>
-
-      {/* Footer Admin mejorado */}
-      <Footer />
-      <div className="border-t border-gray-200 bg-white py-4">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
-            <p className="text-gray-500 text-sm">
-              Panel de administración • Sistema inmobiliario v2.0 • {new Date().getFullYear()}
-            </p>
-            <div className="flex items-center gap-4 text-xs text-gray-400">
-              <span className="flex items-center gap-1">
-                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
-                </svg>
-                Última actualización: hoy
-              </span>
-              <span className="flex items-center gap-1">
-                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                </svg>
-                Sistema estable
-              </span>
-            </div>
-          </div>
-        </div>
+        {/* Footer */}
+        <Footer />
       </div>
     </div>
   );

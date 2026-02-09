@@ -4,15 +4,24 @@ import { propertyAPI } from '../../services/api';
 import type { Property } from '../../services/api';
 import { formatPrice } from '../../utils/formatters';
 
+// INTERFACE MODIFICADA - AÑADIR properties OPTIONAL
 interface PropertyListProps {
+  properties?: Property[];  // ← AÑADE ESTA LÍNEA
   onEdit?: (property: Property) => void;
   onDelete?: (serial: number) => void;
 }
 
-const PropertyList: React.FC<PropertyListProps> = ({ onEdit, onDelete }) => {
-  const [properties, setProperties] = useState<Property[]>([]);
+const PropertyList: React.FC<PropertyListProps> = ({ 
+  properties: externalProperties,  // ← CAMBIA EL NOMBRE
+  onEdit, 
+  onDelete 
+}) => {
+  const [internalProperties, setInternalProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // DECIDIR QUÉ PROPIEDADES USAR
+  const properties = externalProperties || internalProperties;
 
   const fetchProperties = async () => {
     try {
@@ -26,7 +35,7 @@ const PropertyList: React.FC<PropertyListProps> = ({ onEdit, onDelete }) => {
       }
       
       console.log('Propiedades recibidas:', response.data);
-      setProperties(response.data);
+      setInternalProperties(response.data);
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Error al cargar propiedades';
       setError(errorMessage);
@@ -37,8 +46,14 @@ const PropertyList: React.FC<PropertyListProps> = ({ onEdit, onDelete }) => {
   };
 
   useEffect(() => {
-    fetchProperties();
-  }, []);
+    // SOLO cargar si NO se pasaron propiedades externas
+    if (!externalProperties) {
+      fetchProperties();
+    } else {
+      // Si se pasaron propiedades externas, no cargar y usar esas
+      setLoading(false);
+    }
+  }, [externalProperties]); 
 
   const handleDelete = async (serial: number, title: string) => {
     if (!window.confirm(`¿Estás seguro de eliminar la propiedad "${title}"?`)) {
@@ -71,7 +86,7 @@ const PropertyList: React.FC<PropertyListProps> = ({ onEdit, onDelete }) => {
     }
   };
 
-  // Iconos consistentes con tu AdminPage
+  // Iconos consistentes
   const IconEdit = () => (
     <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
