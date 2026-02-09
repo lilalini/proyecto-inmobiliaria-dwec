@@ -4,9 +4,9 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import authRoutes from './src/routes/authRoutes.js';
-
-// Importa las rutas de propiedades
 import propertyRoutes from './src/routes/propertyRoutes.js';
+import visitRoutes from './src/routes/visitRoutes.js';
+import clientRoutes from './src/routes/clientRoutes.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -27,7 +27,7 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', message: 'Server is running' });
 });
 
-// Ruta test (puedes eliminarla luego)
+// Ruta test (eliminarla luego)
 app.get('/api/test', (req, res) => {
   res.json({ message: 'Test route working' });
 });
@@ -35,12 +35,16 @@ app.get('/api/test', (req, res) => {
 // RUTAS PRINCIPALES DE LA API
 app.use('/api/properties', propertyRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/visits', visitRoutes); 
+app.use('/api/clients', clientRoutes);
 
 const server = app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
   console.log(`API Properties: http://localhost:${PORT}/api/properties`);
+  console.log(`API Visits: http://localhost:${PORT}/api/visits`);
 });
 
 server.on('error', (error) => {
   console.error('Server error:', error);
 });
+
