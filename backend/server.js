@@ -7,6 +7,7 @@ import authRoutes from './src/routes/authRoutes.js';
 import propertyRoutes from './src/routes/propertyRoutes.js';
 import visitRoutes from './src/routes/visitRoutes.js';
 import clientRoutes from './src/routes/clientRoutes.js';
+import reportRoutes from './src/routes/reportRoutes.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -37,14 +38,19 @@ app.use('/api/properties', propertyRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/visits', visitRoutes); 
 app.use('/api/clients', clientRoutes);
+app.use('/api/reports', reportRoutes);
+
 
 const server = app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
   console.log(`API Properties: http://localhost:${PORT}/api/properties`);
-  console.log(`API Visits: http://localhost:${PORT}/api/visits`);
+  console.log(`API Visits: http://localhost:5000/api/visits`);
 });
 
 server.on('error', (error) => {
   console.error('Server error:', error);
 });
+
+
+
 
