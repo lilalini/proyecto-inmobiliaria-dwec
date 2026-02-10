@@ -81,6 +81,78 @@ export interface Cliente {
 }
 
 
+export interface ReportMetrica {
+  label: string;
+  value: string | number;
+  icon: string;
+  color?: string;
+}
+
+export interface VisitaReciente {
+  id: number;
+  property_serial: number;
+  client_id: number;
+  visit_date: string;
+  status: 'scheduled' | 'completed' | 'cancelled' | 'no_show';
+  notes: string;
+  property_title?: string;
+  client_name?: string;
+}
+
+export interface ReportDashboard {
+  total_clientes: number;
+  total_propiedades: number;
+  visitas_hoy: number;
+  visitas_recientes: VisitaReciente[];
+  metricas: ReportMetrica[];
+}
+
+export interface VisitaPorMes {
+  mes: string;
+  visitas_mes: number;
+  total_visitas?: number;
+  programadas?: number;
+  completadas?: number;
+  canceladas?: number;
+  no_show?: number;
+}
+
+export interface ReportVisitas {
+  resumen: VisitaPorMes | null;
+  por_mes: VisitaPorMes[];
+  por_dia_semana: Array<{ dia_semana: number; cantidad: number; promedio_diario: number }>;
+  total_registros: number;
+}
+
+export interface ClientePorTipo {
+  type: string;  // ← CAMBIAR A string
+  cantidad: number;
+  porcentaje: number;
+  total_clientes?: string;  
+  tipos_diferentes?: string;
+}
+
+export interface ReportClientes {
+  por_tipo: ClientePorTipo[];
+  nuevos_por_mes: Array<{ mes: string; nuevos_clientes: number }>;
+  total: number;
+}
+
+export interface PropiedadPorTipo {
+  type: string;
+  cantidad: number;
+  precio_promedio: number;
+  precio_minimo: number;
+  precio_maximo: number;
+}
+
+export interface ReportPropiedades {
+  por_tipo: PropiedadPorTipo[];
+  por_ciudad: Array<{ city: string; cantidad: number; precio_promedio: number }>;
+  por_operacion: Array<{ operation: string; cantidad: number; porcentaje: number }>;
+  resumen: PropiedadPorTipo | null;
+}
+
 export const propertyAPI = {
   getAll: async (): Promise<ApiResponse<Property[]>> => {
     try {
@@ -301,13 +373,12 @@ export const visitAPI = {
         url += `?startDate=${encodeURIComponent(startDate)}&endDate=${encodeURIComponent(endDate)}`;
       }
       
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-      };
-      
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
+      const headers: { 'Content-Type': string; 'Authorization'?: string } = {
+          'Content-Type': 'application/json',
+        };
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+        }
       
       const response = await api.get(url, { headers });
       
@@ -344,7 +415,6 @@ export const visitAPI = {
   };
 
 // API PARA CLIENTES
-// En frontend/src/services/api.ts
 export const clientAPI = {
   // Método GET para obtener todos los clientes
   getAll: async (): Promise<ApiResponse<Cliente[]>> => {
@@ -379,15 +449,20 @@ export const clientAPI = {
     try {
       const token = localStorage.getItem('authToken');
       
-      // IMPORTANTE: La tabla clients usa 'name', 'phone', 'type' (inglés)
-      const dataToSend = {
-        name: clientData.name,
-        email: clientData.email,
-        phone: clientData.phone || '',
-        type: clientData.type || 'buyer'
-      };
-      
-      const response = await api.post('/clients', dataToSend, {
+    // IMPORTANTE: La tabla clients usa 'name', 'phone', 'type' (inglés)
+        const dataToSend: {
+          name: string;
+          email: string;
+          phone: string;
+          type: string;
+        } = {
+          name: clientData.name,
+          email: clientData.email,
+          phone: clientData.phone || '',
+          type: clientData.type || 'buyer'
+        };
+              
+        const response = await api.post('/clients', dataToSend, {
         headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       });
       
@@ -449,7 +524,146 @@ export const clientAPI = {
     }
   }
 };
-export default api;
 
-  
- 
+// API PARA REPORTES (FUERA DE clientAPI, AL MISMO NIVEL)
+export const reportAPI = {
+  dashboard: async (): Promise<ApiResponse<ReportDashboard>> => {
+    try {
+      const token = localStorage.getItem('authToken');
+      const response = await api.get('/reports/dashboard', {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+      });
+      
+      return {
+        success: response.data.success,
+        data: response.data.data,
+        error: response.data.error
+      };
+    } catch (error: unknown) {
+      console.error('Error en reportAPI.dashboard:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      
+      return {
+        success: false,
+        data: {
+          total_clientes: 0,
+          total_propiedades: 0,
+          visitas_hoy: 0,
+          visitas_recientes: [],
+          metricas: []
+        },
+        error: `Error al cargar dashboard: ${errorMessage}`
+      };
+    }
+  },
+
+  visits: async (startDate?: string, endDate?: string): Promise<ApiResponse<ReportVisitas>> => {
+    try {
+      const token = localStorage.getItem('authToken');
+      const params: { startDate?: string; endDate?: string } = {};
+      
+      if (startDate) params.startDate = startDate;
+      if (endDate) params.endDate = endDate;
+      
+      const response = await api.get('/reports/visits', {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+        params
+      });
+      
+      return {
+        success: response.data.success,
+        data: response.data.data,
+        error: response.data.error
+      };
+    } catch (error: unknown) {
+      console.error('Error en reportAPI.visits:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      
+      return {
+        success: false,
+        data: {
+          resumen: null,
+          por_mes: [],
+          por_dia_semana: [],
+          total_registros: 0
+        },
+        error: `Error al cargar visitas: ${errorMessage}`
+      };
+    }
+  },
+
+ clients: async (): Promise<ApiResponse<ReportClientes>> => {
+  try {
+    const token = localStorage.getItem('authToken');
+    const response = await api.get('/reports/clients', {
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+    });
+    
+    const apiData = response.data.data;
+    
+    // CONVERTIR STRINGS A NÚMEROS con tipo explícito
+    const por_tipo_corregido = apiData.por_tipo.map((item: { 
+      type: string; 
+      cantidad: string; 
+      porcentaje: string; 
+      total_clientes: string;
+      tipos_diferentes?: string;
+    }) => ({
+      type: item.type,
+      cantidad: Number(item.cantidad),
+      porcentaje: Number(item.porcentaje),
+      total_clientes: Number(item.total_clientes),
+      tipos_diferentes: item.tipos_diferentes
+    }));
+    
+    return {
+      success: true,
+      data: {
+        por_tipo: por_tipo_corregido,
+        nuevos_por_mes: apiData.nuevos_por_mes,
+        total: apiData.total
+      },
+      error: undefined
+    };
+    
+  } catch (error: unknown) {
+    console.error('Error en reportAPI.clients:', error);
+    return {
+      success: false,
+      data: { por_tipo: [], nuevos_por_mes: [], total: 0 },
+      error: 'Error al cargar datos de clientes'
+    };
+  }
+},
+
+  properties: async (): Promise<ApiResponse<ReportPropiedades>> => {
+    try {
+      const token = localStorage.getItem('authToken');
+      const response = await api.get('/reports/properties', {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+      });
+      
+      return {
+        success: response.data.success,
+        data: response.data.data,
+        error: response.data.error
+      };
+    } catch (error: unknown) {
+      console.error('Error en reportAPI.properties:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      
+      return {
+        success: false,
+        data: {
+          por_tipo: [],
+          por_ciudad: [],
+          por_operacion: [],
+          resumen: null
+        },
+        error: `Error al cargar propiedades: ${errorMessage}`
+      };
+    }
+  }
+};
+
+export default api;

@@ -13,7 +13,7 @@ import { BuildingIcon, CalendarIcon, CheckIcon, StarIcon } from '../components/c
 import VisualCalendar from '../components/visits/VisualCalendar';
 import ClientesTable from '../components/admin/ClientesTable';
 import NewClientModal from '../components/admin/NewClientModal';
-
+import ReportsPage from '../pages/ReportsPage';
   const AdminPage: React.FC = () => {
 
   const [showNewClientModal, setShowNewClientModal] = useState(false);
@@ -437,37 +437,7 @@ case 'clients':
   );
 
 case 'reports':
-  return (
-    <div className="space-y-8">
-      <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h2 className="text-xl font-bold text-gray-800">Reportes y Análisis</h2>
-            <p className="text-gray-600">Genera informes de ventas, visitas y rendimiento</p>
-          </div>
-          <button
-            onClick={() => {/* Lógica para exportar */}}
-            className="inline-flex items-center px-4 py-2 border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50"
-          >
-            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            Exportar Datos
-          </button>
-        </div>
-        <div className="text-center py-12 border-2 border-dashed border-gray-300 rounded-lg">
-          <svg className="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-          </svg>
-          <h3 className="text-lg font-medium text-gray-700 mb-2">Módulo de reportes en desarrollo</h3>
-          <p className="text-gray-500 max-w-md mx-auto">
-            Próximamente podrás generar reportes personalizados de visitas, propiedades y rendimiento comercial.
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-
+  return <ReportsPage />;
       default:
         return (
           <div className="bg-white rounded-xl border border-gray-200 p-12 text-center shadow-sm">

@@ -317,6 +317,7 @@ const HomePage: React.FC = () => {
                   <button 
                     className="w-4/6 inline-block bg-gradient-to-r from-blue-600 to-blue-700 text-white py-2.5 px-4 rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 transition-all duration-200 text-base shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
                     title="Valorar propiedad"
+                    onClick={() => window.location.href = '/valoracion'}
                   >
                     <TranslatedText text="Valorar propiedad" />
                   </button>

@@ -1,3 +1,30 @@
 @import "tailwindcss/base";
 @import "tailwindcss/components";
 @import "tailwindcss/utilities";
+
+/* Personalización DatePicker */
+.react-datepicker__close-icon {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 0;
+  background: transparent;
+}
+
+.react-datepicker__close-icon::after {
+  background-color: #6b7280;
+  font-size: 16px;
+  padding: 2px;
+}
+
+.react-datepicker__day {
+  width: 2.5rem;
+  height: 2.5rem;
+  line-height: 2.5rem;
+  margin: 0.1rem;
+}
+
+.react-datepicker__month-container {
+  width: 320px;
+}
