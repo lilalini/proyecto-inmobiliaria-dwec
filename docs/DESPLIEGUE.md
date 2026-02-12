@@ -1,74 +1,101 @@
-# Despliegue Simplificado
+# Despliegue
 
-## Opción Recomendada: Railway (el más fácil)
+>**Nota importante:** Esta guía es teórica. 
+
+## Opción Recomendada: Railway + Vercel
 
 ### 1. Backend en Railway
-1. Ve a https://railway.app
-2. "New Project" → "Deploy from GitHub repo"
-3. Selecciona tu repositorio
-4. Añade base de datos: "Add" → "Database" → "PostgreSQL"
-5. Railway conecta todo automáticamente
 
+```bash
+# Pasos estimados:
+1. Crear cuenta en https://railway.app (GitHub)
+2. New Project → Deploy from GitHub
+3. Seleccionar repositorio (backend)
+4. Add → Database → PostgreSQL
+5. Railway genera variables automáticamente
+6. Configurar variables de entorno:
+   - JWT_SECRET=generar_clave_segura
+   - NODE_ENV=production
 ```
 
-### 2. Frontend en Vercel (gratis)
-1. Ve a https://vercel.com
-2. "Import Project" desde GitHub
-3. Selecciona la carpeta `inmobiliaria-frontend`
-4. Configura:
-   - Framework: Vite
+### 2. Frontend en Vercel
+
+```bash
+# Pasos estimados:
+1. Crear cuenta en https://vercel.com
+2. Import Project → Desde GitHub
+3. Seleccionar carpeta: inmobiliaria-frontend
+4. Configurar:
+   - Framework Preset: Vite
    - Build Command: npm run build
    - Output Directory: dist
-5. Despliega
-
+5. Añadir variable:
+   - VITE_API_URL=https://tu-backend.railway.app/api
+6. Deploy
 ```
 
-## Variables de Entorno (las necesarias)
+---
 
-En Railway (backend):
-DB_HOST=postgres
+## Variables de Entorno
+
+**Backend (.env):**
+```
+DB_HOST=postgres.railway.internal
 DB_PORT=5432
 DB_NAME=railway
 DB_USER=postgres
-DB_PASSWORD=(lo da Railway automático)
-JWT_SECRET=tu_clave_secreta_aqui
+DB_PASSWORD=generado_automaticamente
+JWT_SECRET=clave_secreta_fuerte_aqui
 NODE_ENV=production
-CORS_ORIGIN=https://tufrontend.vercel.app
-
+CORS_ORIGIN=https://tu-frontend.vercel.app
+PORT=8080
 ```
 
-En Vercel (frontend):
-VITE_API_URL=https://turailwayapp.railway.app/api
-
+**Frontend (.env.production):**
+```
+VITE_API_URL=https://tu-backend.railway.app/api
 ```
 
-## URLs Finales
-- Frontend: https://tunombre.vercel.app
-- Backend: https://tunombre.railway.app
-- API: https://tunombre.railway.app/api/properties
+---
 
+## URLs Previstas
+
+| Servicio | URL |
+|----------|-----|
+| Frontend | https://inmobiliaria-apturist.vercel.app |
+| Backend API | https://inmobiliaria-backend.railway.app |
+| API Propiedades | https://inmobiliaria-backend.railway.app/api/properties |
+
+---
+
+## Verificación
+
+```bash
+# Comprobar backend
+curl https://tu-backend.railway.app/api/properties
+
+# Comprobar frontend
+# Abrir navegador en https://tu-frontend.vercel.app
 ```
 
-## Verificar que Funciona
-1. Visita tu frontend en Vercel
-2. Deberías ver las propiedades
-3. Los filtros deberían funcionar
-4. Los detalles de propiedad deberían cargar
+---
 
-```
+## Posibles Problemas
 
-## Si algo falla:
-1. Revisa logs en Railway dashboard
-2. Revisa logs en Vercel dashboard
-3. Verifica que las variables de entorno están correctas
+1. **CORS:** Configurar backend para aceptar dominio de Vercel
+2. **Variables de entorno:** Verificar nombres exactos
+3. **Base de datos:** Railway asigna credenciales dinámicas
+4. **Build:** Asegurar que Vite compila correctamente
 
-```
+---
 
-## Backup Simple
-Para hacer backup de la base de datos en Railway:
-1. Ve a tu proyecto en Railway
-2. Click en la base de datos PostgreSQL
-3. "Data" → "Backups"
-4. "Create Backup"
+## Nota
 
-```
+Esta guía es **orientativa**. Para un despliegue real se recomienda:
+1. Seguir la documentación oficial de Railway y Vercel
+2. Probar en entorno de desarrollo primero
+3. Configurar dominio personalizado (opcional)
+
+---
+
+© 2026 Apturist Inmobiliaria - v2.0.0

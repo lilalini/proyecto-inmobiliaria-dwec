@@ -1,49 +1,141 @@
-# Proyecto Inmobiliaria - Sistema Full-Stack
+# Inmobiliaria Apturist - Sistema de Gestión Inmobiliaria
 
-Aplicación web completa para la gestión, visualización y administración de propiedades inmobiliarias. Incluye un catálogo público con filtros avanzados y un panel de administración.
+Sistema web para gestión inmobiliaria con panel de administración, reportes estadísticos y valoración de propiedades.
 
-## Tecnologías
+---
 
-**Frontend:** React 18, TypeScript, Tailwind CSS, React Router, Axios  
-**Backend:** Node.js, Express, PostgreSQL  
-**Base de Datos:** PostgreSQL con esquema relacional completo
+## Características Principales
 
-## Características Implementadas
+### Sitio Público
+- Página principal con propiedades destacadas
+- Búsqueda y filtrado de propiedades
+- Valoración gratuita de propiedades
+- Soporte multiidioma (ES/EN/FR)
 
-*   Catálogo público de propiedades con filtros avanzados (ciudad, tipo, precio, búsqueda textual)
-*   Páginas de detalle con galería de imágenes interactiva
-*   API RESTful completa con Express y PostgreSQL
-*   Base de datos con 9 tablas normalizadas (propiedades, imágenes, usuarios, visitas, clientes, etc.)
-*   Diseño responsive construido con Tailwind CSS
-*   Sistema de navegación completo con React Router
+### Panel de Administración
+- Dashboard con métricas en tiempo real
+- Gestión CRUD de propiedades, clientes y visitas
+- Calendario de visitas interactivo
+- Reportes con gráficos (Recharts)
+- Exportación de datos a CSV
+- Autenticación JWT
+
+---
+
+## Tecnologías Utilizadas
+
+| Capa | Tecnologías |
+|------|-------------|
+| Frontend | React, TypeScript, Tailwind CSS, Recharts, Axios |
+| Backend | Node.js, Express, PostgreSQL, JWT, Bcryptjs |
+| Base de Datos | PostgreSQL |
+| Herramientas | Git, npm |
+
+---
 
 ## Estructura del Proyecto
+
 ```
-proyecto-inmobiliaria-dwec/
-├── inmobiliaria-frontend/ # Aplicación React
-├── backend/ # API Express
-├── database/ # Scripts SQL
-├── docs/ # Documentación
-├── LICENSE
-└── README.md
+inmobiliaria_v2/
+├── backend/                 # API REST
+│   ├── src/
+│   │   ├── controllers/
+│   │   ├── routes/
+│   │   ├── middleware/
+│   │   └── models/
+│   └── server.js
+│
+└── inmobiliaria-frontend/  # React App
+    ├── src/
+    │   ├── pages/
+    │   │   ├── HomePage.tsx
+    │   │   ├── AdminPage.tsx
+    │   │   ├── ReportsPage.tsx
+    │   │   ├── ValuationPage.tsx
+    │   │   └── LoginPage.tsx
+    │   └── services/
+    └── package.json
 ```
+
+---
+
 ## Instalación Rápida
 
-1.  Clonar repositorio: `git clone https://github.com/lilalini/proyecto-inmobiliaria-dwec.git`
-2.  Configurar base de datos PostgreSQL (ver scripts en `/database`)
-3.  Instalar dependencias: `npm install` en `/backend` y `/inmobiliaria-frontend`
-4.  Ejecutar: `npm run dev` en ambas carpetas
+```bash
+# 1. Clonar repositorio
+git clone https://github.com/lilalini/proyecto-inmobiliaria-dwec.git
+cd proyecto-inmobiliaria-dwec
 
-Frontend disponible en `http://localhost:5173`. API disponible en `http://localhost:5000/api`.
+# 2. Base de datos
+psql -U postgres -c "CREATE DATABASE inmobiliaria_db;"
+cd database
+psql -U postgres -d inmobiliaria_db -f schema.sql
+psql -U postgres -d inmobiliaria_db -f seed.sql
 
-## Estado del Proyecto
+# 3. Backend
+cd ../backend
+cp .env.example .env
+npm install
+npm run dev
 
-El sistema base está completamente funcional. El backend sirve una API REST, el frontend consume los datos y muestra un catálogo interactivo con filtros. La base de datos contiene datos de ejemplo realistas.
+# 4. Frontend (nueva terminal)
+cd ../inmobiliaria-frontend
+npm install
+npm install recharts react-datepicker date-fns axios react-router-dom
+npm run dev
+```
+
+**Credenciales:**
+- Admin: carlos.rodriguez@apturist.com / admin123
+
+---
+
+## Acceso a la Aplicación
+
+| Recurso | URL |
+|---------|-----|
+| Frontend | http://localhost:5173 |
+| Panel Admin | http://localhost:5173/admin |
+| Valoración | http://localhost:5173/valoracion |
+| API Propiedades | http://localhost:5000/api/properties |
+
+---
+
+## API Endpoints Principales
+
+```
+POST   /api/auth/login
+GET    /api/properties
+POST   /api/properties
+GET    /api/visits
+POST   /api/visits
+GET    /api/reports/dashboard
+GET    /api/reports/visits
+GET    /api/reports/clients
+GET    /api/reports/properties
+```
+
+---
 
 ## Documentación
 
-Para la documentación técnica detallada, incluyendo guía de instalación completa, referencia de la API y diagramas de base de datos, consulta la carpeta `/docs`.
+La documentación se encuentra en la carpeta `/docs`:
+- `instalacion.md` - Guía de instalación
+- `api-reference.md` - Endpoints detallados
+- `database.md` - Esquema y scripts SQL
+- `despliegue.md` - Guía de despliegue (en desarrollo)
+
+**Nota:** El manual de usuario está integrado en la interfaz de la aplicación.
+
+---
 
 ## Licencia
 
-Este proyecto está bajo la Licencia MIT. Ver el archivo `LICENSE` para más detalles.
+Este proyecto está bajo la Licencia MIT.
+
+---
+
+**Desarrollado con ❤️ para el sector inmobiliario**  
+© 2026 Apturist Inmobiliaria - v2.0.0
+
+[⬆ Volver arriba](#inmobiliaria-apturist---sistema-de-gestión-inmobiliaria)

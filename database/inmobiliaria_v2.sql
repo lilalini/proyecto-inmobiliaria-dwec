@@ -184,7 +184,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Verifico que la función se creó
-SELECT '✅ Función search_properties recreada correctamente' AS mensaje;
+SELECT 'Función search_properties recreada correctamente' AS mensaje;
 
 
 -- 4.3. Función de estadísticas por ciudad (AJUSTADA)
@@ -445,10 +445,14 @@ INSERT INTO features (name, icon, category) VALUES
 ('Amueblado', 'furnished', 'equipamiento');
 
 -- 9.2. Insertar usuarios/agentes
+-- NOTA: Las contraseñas se generan con bcrypt
+-- Para crear nuevos usuarios, genera el hash con: 
+-- node -e "console.log(require('bcryptjs').hashSync('tu_contraseña', 10))"
+
 INSERT INTO users (name, email, password, role) VALUES
-('Admin Principal', 'admin@inmobiliaria.com', '$2a$10$N9qo8uLOickgx2ZMRZoMyeAJsK8V4.1H8W7xLc5U7Jp2lWEbH4zO6', 'admin'),
-('Laura Agente', 'laura@inmobiliaria.com', '$2a$10$N9qo8uLOickgx2ZMRZoMyeAJsK8V4.1H8W7xLc5U7Jp2lWEbH4zO6', 'agent'),
-('Pedro Manager', 'pedro@inmobiliaria.com', '$2a$10$N9qo8uLOickgx2ZMRZoMyeAJsK8V4.1H8W7xLc5U7Jp2lWEbH4zO6', 'manager');
+('Carlos Rodríguez', 'carlos.rodriguez@apturist.com', '$2b$10$NEnVRd3S3682doxheyQHo.MbhGw.eGRmYt7fOUz3jWsFeYxhW6VQO', 'admin');
+
+-- Agente y manager se crearán manualmente cuando se necesiten
 
 -- 9.3. Insertar clientes
 INSERT INTO clients (name, email, phone, type) VALUES
@@ -487,7 +491,7 @@ INSERT INTO visits (property_serial, client_id, visit_date, status, notes) VALUE
 (1, 5, CURRENT_TIMESTAMP + INTERVAL '2 days', 'scheduled', 'Interesado en la piscina'),
 (2, 6, CURRENT_TIMESTAMP + INTERVAL '3 days', 'scheduled', 'Necesita financiación');
 
-SELECT '✅ Visitas insertadas con IDs correctos (5 y 6)' AS mensaje;
+SELECT 'Visitas insertadas con IDs correctos (5 y 6)' AS mensaje;
 
 -- ============================================
 -- BLOQUE 10: ÍNDICES PARA OPTIMIZACIÓN
@@ -503,7 +507,7 @@ CREATE INDEX idx_visits_property ON visits(property_serial);
 CREATE INDEX idx_visits_date ON visits(visit_date);
 CREATE INDEX idx_property_features_property ON property_features(property_serial);
 
-SELECT '✅ Índices creados correctamente' AS mensaje;
+SELECT 'Índices creados correctamente' AS mensaje;
 
 
 -- ============================================
@@ -522,7 +526,7 @@ ORDER BY table_name;
 -- Probar que todo funciona
 SELECT 'Funciones de imágenes funcionando:' AS prueba;
 -- Verificar datos
-SELECT '✅ Resumen de datos:' AS resumen;
+SELECT 'Resumen de datos:' AS resumen;
 SELECT 
     (SELECT COUNT(*) FROM properties) AS propiedades,
     (SELECT COUNT(*) FROM clients) AS clientes,

@@ -1,124 +1,139 @@
 # Referencia de la API
 
 ## Base URL
+```
 http://localhost:5000/api
+```
+
+> **Nota:** La ruta raíz `http://localhost:5000/api` no tiene contenido.  
+> Usa los endpoints específicos listados a continuación.
+
+---
 
 ## Autenticación
 
 | Método | Endpoint | Descripción | Permisos |
-| :--- | :--- | :--- | :--- |
-| `POST` | `/auth/login` | Iniciar sesión de usuario. | Pública |
-| `GET` | `/auth/verify` | Verificar validez del token actual. | Requiere Token |
-
-**Ejemplo de cuerpo para `/auth/login`:**
-```json
-{
-  "email": "usuario@ejemplo.com",
-  "password": "contraseñaSegura123"
-}
-
-```
-
-# Propiedades
-
-| Método | Endpoint | Descripción | Permisos |
 |--------|----------|-------------|----------|
-| `GET` | `/properties` | Obtiene el listado de todas las propiedades. Admite filtros. | Pública |
-| `GET` | `/properties/:id` | Obtiene los detalles de una propiedad específica por su ID. | Pública |
-| `POST` | `/properties` | Crea una nueva propiedad. **Usa `multipart/form-data` para imágenes.** | Solo Admin |
-| `PUT` | `/properties/:id` | Actualiza la información de una propiedad existente. | Solo Admin |
-| `DELETE` | `/properties/:id` | Elimina una propiedad del sistema. | Solo Admin |
+| `POST` | `/auth/login` | Iniciar sesión de usuario | Pública |
+| `GET` | `/auth/verify` | Verificar validez del token | Requiere Token |
 
-## Parámetros de consulta para `GET /properties`
-
-* `city`: Filtrar por ciudad (ej. `Madrid`).
-* `type`: Filtrar por tipo de propiedad (ej. `apartment`, `house`).
-* `operation`: Filtrar por operación (ej. `sale`, `rent`).
-* `minPrice` / `maxPrice`: Filtrar por rango de precio.
-* `bedrooms` / `bathrooms`: Filtrar por número de habitaciones o baños.
-
-## Ejemplo de consulta filtrada
-
-```json
-GET /api/properties?city=Madrid&type=apartment&minPrice=100000
-
-```
-# Visitas
-
-| Método | Endpoint | Descripción | Permisos |
-|--------|----------|-------------|----------|
-| `POST` | `/visits` | Programa una nueva visita a una propiedad. | Pública |
-| `GET` | `/visits/property/:propertySerial` | Obtiene todas las visitas asociadas a una    propiedad. | Pública |
-| `GET` | `/visits/calendar` | Obtiene visitas para un rango de fechas, útil para calendarios. | Pública |
-| `GET` | `/visits` | Obtiene el listado completo de todas las visitas. | Solo Admin |
-| `PUT` | `/visits/:id/status` | Actualiza el estado de una visita programada. | Solo Admin |
-| `DELETE` | `/visits/:id` | Elimina una visita del sistema. | Solo Admin |
-
-## Ejemplo de cuerpo para `POST /visits`
-
+**Ejemplo POST /auth/login:**
 ```json
 {
-  "property_id": 123,
-  "client_name": "Ana García López",
-  "client_email": "ana.garcia@email.com",
-  "client_phone": "+34 612 345 678",
-  "visit_date": "2024-02-20T16:30:00.000Z",
-  "notes": "Interesada en la reforma de la cocina."
-}
-
-```
-## Ejemplo de cuerpo para `POST /clients`
-```json
-{
-  "name": "Carlos Méndez",
-  "email": "carlos.mendez@email.com",
-  "phone": "645 87 41 25",
-  "type": "buyer"
+  "email": "carlos.rodriguez@apturist.com",
+  "password": "admin123"
 }
 ```
-**Valores aceptados para el campo `type`:** `buyer`, `seller`, `tenant`, `landlord`.
 
-# Códigos de Estado HTTP
-
-| Código | Significado |
-|--------|-------------|
-| `200 OK` | La solicitud se completó con éxito. |
-| `201 Created` | Un nuevo recurso fue creado con éxito (ej. POST). |
-| `400 Bad Request` | Error en los datos enviados por el cliente. |
-| `401 Unauthorized` | Faltan credenciales de autenticación o son inválidas. |
-| `403 Forbidden` | El usuario autenticado no tiene permisos para la acción. |
-| `404 Not Found` | El recurso solicitado no existe. |
-| `500 Internal Server Error` | Error genérico del servidor. |
-
-# Estructura de Respuesta
-
-Todas las respuestas siguen un formato JSON consistente:
-
-## Éxito
-
+**Respuesta éxito:**
 ```json
 {
   "success": true,
-  "data": { ... }, // o [ ... ] para listas
-  "message": "Operación completada." // Opcional
+  "token": "eyJhbGciOiJIUzI1NiIs...",
+  "user": {
+    "id": 1,
+    "name": "Carlos Rodríguez",
+    "email": "carlos.rodriguez@apturist.com",
+    "role": "admin"
+  }
 }
-
 ```
 
+---
 
-## Error
+## Propiedades
 
-```json
-{
-  "success": false,
-  "error": "Descripción clara del error.",
-  "data": null
-}
+| Método | Endpoint | Descripción | Permisos |
+|--------|----------|-------------|----------|
+| `GET` | `/properties` | Listado de propiedades con filtros | Pública |
+| `GET` | `/properties/:serial` | Detalle de propiedad por serial | Pública |
+| `POST` | `/properties` | Crear nueva propiedad | Solo Admin |
+| `PUT` | `/properties/:serial` | Actualizar propiedad | Solo Admin |
+| `DELETE` | `/properties/:serial` | Eliminar propiedad | Solo Admin |
 
+**Filtros disponibles en GET /properties:**
 ```
-## Nota sobre permisos
+?city=Madrid
+?type=apartment|house|penthouse
+?operation=sale|rent
+?minPrice=100000&maxPrice=500000
+?bedrooms=3
+?featured=true
+```
 
-* **Pública**: Accesible sin autenticación.
-* **Requiere Token**: Necesita encabezado `Authorization: Bearer <JWT_TOKEN>`.
-* **Solo Admin**: Necesita token de un usuario con rol de administrador.
+---
 
+## Visitas
+
+| Método | Endpoint | Descripción | Permisos |
+|--------|----------|-------------|----------|
+| `POST` | `/visits` | Programar nueva visita | Pública |
+| `GET` | `/visits` | Listado completo de visitas | Solo Admin |
+| `GET` | `/visits/calendar` | Visitas por rango de fechas | Requiere Token |
+| `GET` | `/visits/property/:serial` | Visitas de una propiedad | Pública |
+| `PUT` | `/visits/:id/status` | Actualizar estado de visita | Solo Admin |
+| `DELETE` | `/visits/:id` | Eliminar visita | Solo Admin |
+
+**Estados de visita:** `scheduled`, `completed`, `cancelled`, `no_show`
+
+---
+
+## Clientes
+
+| Método | Endpoint | Descripción | Permisos |
+|--------|----------|-------------|----------|
+| `GET` | `/clients` | Listado de clientes | Solo Admin |
+| `POST` | `/clients` | Crear nuevo cliente | Solo Admin |
+| `PUT` | `/clients/:id` | Actualizar cliente | Solo Admin |
+| `DELETE` | `/clients/:id` | Eliminar cliente | Solo Admin |
+
+**Tipos de cliente:** `buyer`, `seller`, `tenant`, `landlord`
+
+---
+
+## Reportes
+
+| Método | Endpoint | Descripción | Permisos |
+|--------|----------|-------------|----------|
+| `GET` | `/reports/dashboard` | Métricas principales | Solo Admin |
+| `GET` | `/reports/visits` | Estadísticas de visitas por mes | Solo Admin |
+| `GET` | `/reports/clients` | Distribución de clientes por tipo | Solo Admin |
+| `GET` | `/reports/properties` | Estadísticas de propiedades | Solo Admin |
+
+**Parámetros para /reports/visits:**
+```
+?startDate=2026-01-01&endDate=2026-12-31
+```
+
+---
+
+## Códigos de Estado HTTP
+
+| Código | Significado |
+|--------|-------------|
+| `200 OK` | Solicitud exitosa |
+| `201 Created` | Recurso creado correctamente |
+| `400 Bad Request` | Error en los datos enviados |
+| `401 Unauthorized` | Token no proporcionado o inválido |
+| `403 Forbidden` | Sin permisos para la acción |
+| `404 Not Found` | Recurso no encontrado |
+| `500 Internal Server Error` | Error en el servidor |
+
+---
+
+## Headers Requeridos
+
+**Para endpoints con token:**
+```
+Authorization: Bearer <JWT_TOKEN>
+Content-Type: application/json
+```
+
+**Para endpoints con imágenes (POST/PUT /properties):**
+```
+Content-Type: multipart/form-data
+```
+
+---
+
+© 2026 Apturist Inmobiliaria - v2.0.0
